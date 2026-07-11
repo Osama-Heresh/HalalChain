@@ -4,322 +4,414 @@
  */
 
 import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
+// @ts-ignore
+import reshaper from "arabic-persian-reshaper";
 import { RegistryProject } from "../data/registry";
 
-export function generateCertificatePDF(project: RegistryProject) {
-  // Create PDF document (A4 size: 210mm x 297mm)
-  const doc = new jsPDF({
-    orientation: "portrait",
-    unit: "mm",
-    format: "a4",
+// Resolve ArabicShaper support for both ESM and CJS bundling
+const ArabicShaper = reshaper?.ArabicShaper || (reshaper as any)?.default?.ArabicShaper || reshaper;
+
+/**
+ * Helper to ensure all images inside an element are fully loaded
+ * before we trigger html2canvas, preventing partial rendering or hanging.
+ */
+function waitForImages(element: HTMLElement): Promise<void> {
+  const images = element.querySelectorAll("img");
+  const promises: Promise<void>[] = [];
+
+  images.forEach((img) => {
+    if (img.complete) {
+      return;
+    }
+    promises.push(
+      new Promise<void>((resolve) => {
+        img.addEventListener("load", () => resolve());
+        img.addEventListener("error", () => resolve()); // Resolve even on error so we do not hang
+      })
+    );
   });
 
-  const pageWidth = 210;
-  const pageHeight = 297;
+  return Promise.all(promises).then(() => {});
+}
 
-  // Colors
-  const goldColor = [212, 175, 55]; // #d4af37
-  const darkGreen = [2, 44, 34];    // #022c22 (emerald-950)
-  const textDark = [15, 23, 42];    // #0f172a (slate-900)
-  const textMuted = [100, 116, 139]; // #64748b (slate-500)
-  const lightBg = [248, 250, 252];  // #f8fafc (slate-50)
-  const emeraldColor = [5, 150, 105]; // #059669 (emerald-600)
-  const borderLight = [226, 232, 240]; // #e2e8f0 (slate-200)
+/**
+ * Helper to recursively walk a DOM subtree and process Arabic text nodes.
+ * It reshapes the letters using ArabicShaper and reverses them so they
+ * display correctly when html2canvas renders the text left-to-right.
+ */
+function processArabicDOM(node: Node): void {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node.textContent || "";
+    // Match any sequence with Arabic characters
+    if (/[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)) {
+      try {
+        // Convert to Arabic Presentation Forms
+        const shaped = ArabicShaper.convertArabic(text);
+        node.textContent = shaped;
+      } catch (err) {
+        console.warn("Failed to shape Arabic text:", text, err);
+      }
+    }
+  } else if (node.nodeType === Node.ELEMENT_NODE) {
+    const el = node as HTMLElement;
 
-  // 1. Draw elegant background color (soft cream-offwhite tint)
-  doc.setFillColor(255, 255, 255);
-  doc.rect(0, 0, pageWidth, pageHeight, "F");
+    // Recursively process child nodes
+    const children = Array.from(el.childNodes);
+    for (const child of children) {
+      processArabicDOM(child);
+    }
+  }
+}
 
-  // 2. Draw dual golden borders
-  // Outer double border
-  doc.setDrawColor(goldColor[0], goldColor[1], goldColor[2]);
-  doc.setLineWidth(1.2);
-  doc.rect(8, 8, pageWidth - 16, pageHeight - 16, "S");
+/**
+ * Converts LMS values to an sRGB string (RGB or RGBA).
+ */
+function oklabValuesToRgba(L: number, a: number, b: number, A: number): string {
+  // 1. OKLab to LMS
+  const l = L + 0.3963377774 * a + 0.2158037573 * b;
+  const m = L - 0.1055613458 * a - 0.0638541728 * b;
+  const s = L - 0.0894841775 * a - 1.2914855480 * b;
 
-  // Inner thin border
-  doc.setLineWidth(0.3);
-  doc.rect(11, 11, pageWidth - 22, pageHeight - 22, "S");
+  // Cubically scale LMS
+  const l_ = l * l * l;
+  const m_ = m * m * m;
+  const s_ = s * s * s;
 
-  // 3. Draw Corner Accents
-  doc.setLineWidth(0.8);
-  const offset = 11;
-  const accentSize = 6;
-  // Top Left
-  doc.line(offset, offset, offset + accentSize, offset);
-  doc.line(offset, offset, offset, offset + accentSize);
-  // Top Right
-  doc.line(pageWidth - offset, offset, pageWidth - offset - accentSize, offset);
-  doc.line(pageWidth - offset, offset, pageWidth - offset, offset + accentSize);
-  // Bottom Left
-  doc.line(offset, pageHeight - offset, offset + accentSize, pageHeight - offset);
-  doc.line(offset, pageHeight - offset, offset, pageHeight - offset - accentSize);
-  // Bottom Right
-  doc.line(pageWidth - offset, pageHeight - offset, pageWidth - offset - accentSize, pageHeight - offset);
-  doc.line(pageWidth - offset, pageHeight - offset, pageWidth - offset, pageHeight - offset - accentSize);
+  // 2. LMS to Linear sRGB
+  const r = +4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_;
+  const g = -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_;
+  const b_ = -0.0041960863 * l_ - 0.7034186147 * m_ + 1.7076147010 * s_;
 
-  // 4. Decorative background geometric watermark (subtle central circle and star)
-  doc.setDrawColor(goldColor[0], goldColor[1], goldColor[2]);
-  doc.setLineWidth(0.1);
-  const cx = pageWidth / 2;
-  const cy = 135;
-  doc.circle(cx, cy, 28, "S");
-  doc.circle(cx, cy, 20, "S");
-  // Let's draw an 8-point star watermark
-  for (let i = 0; i < 8; i++) {
-    const angle1 = (i * Math.PI) / 4;
-    const angle2 = ((i + 2) * Math.PI) / 4;
-    const rOuter = 26;
-    const x1 = cx + rOuter * Math.cos(angle1);
-    const y1 = cy + rOuter * Math.sin(angle1);
-    const x2 = cx + rOuter * Math.cos(angle2);
-    const y2 = cy + rOuter * Math.sin(angle2);
-    doc.line(x1, y1, x2, y2);
+  // Gamma correction
+  const gamma = (c: number) => {
+    return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(Math.max(0, c), 1 / 2.4) - 0.055;
+  };
+
+  const R = Math.round(Math.max(0, Math.min(1, gamma(r))) * 255);
+  const G = Math.round(Math.max(0, Math.min(1, gamma(g))) * 255);
+  const B = Math.round(Math.max(0, Math.min(1, gamma(b_))) * 255);
+
+  if (A === 1) {
+    return `rgb(${R}, ${G}, ${B})`;
+  } else {
+    return `rgba(${R}, ${G}, ${B}, ${A})`;
+  }
+}
+
+/**
+ * Converts an oklch color string to standard rgb/rgba string.
+ */
+function oklchToRgba(oklchStr: string): string {
+  try {
+    const match = oklchStr.match(/oklch\(\s*([\d.]+%?)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)/i);
+    if (!match) return oklchStr;
+
+    const lVal = match[1];
+    const cVal = parseFloat(match[2]);
+    const hVal = parseFloat(match[3]);
+    const aVal = match[4];
+
+    const L = lVal.endsWith("%") ? parseFloat(lVal) / 100 : parseFloat(lVal);
+    const C = cVal;
+    // Convert Hue in degrees to radians
+    const H = (hVal * Math.PI) / 180;
+    const A = aVal ? (aVal.endsWith("%") ? parseFloat(aVal) / 100 : parseFloat(aVal)) : 1;
+
+    // OKLCH to OKLab
+    const a = C * Math.cos(H);
+    const b = C * Math.sin(H);
+
+    return oklabValuesToRgba(L, a, b, A);
+  } catch (e) {
+    console.warn("Failed converting oklch color:", oklchStr, e);
+    return oklchStr;
+  }
+}
+
+/**
+ * Converts an oklab color string to standard rgb/rgba string.
+ */
+function oklabToRgba(oklabStr: string): string {
+  try {
+    const match = oklabStr.match(/oklab\(\s*([\d.]+%?)\s+([-+]?[\d.]+)\s+([-+]?[\d.]+)(?:\s*\/\s*([\d.]+%?))?\s*\)/i);
+    if (!match) return oklabStr;
+
+    const lVal = match[1];
+    const aVal = match[2];
+    const bVal = match[3];
+    const alphaVal = match[4];
+
+    const L = lVal.endsWith("%") ? parseFloat(lVal) / 100 : parseFloat(lVal);
+    const a = parseFloat(aVal);
+    const b = parseFloat(bVal);
+    const A = alphaVal ? (alphaVal.endsWith("%") ? parseFloat(alphaVal) / 100 : parseFloat(alphaVal)) : 1;
+
+    return oklabValuesToRgba(L, a, b, A);
+  } catch (e) {
+    console.warn("Failed converting oklab color:", oklabStr, e);
+    return oklabStr;
+  }
+}
+
+/**
+ * Extracts dominant color from modern color-mix CSS functions.
+ */
+function resolveColorMix(colorMixStr: string): string {
+  try {
+    const match = colorMixStr.match(/color-mix\(\s*in\s+\w+(?:\s+[-a-z0-9]+)?\s*,\s*([^,]+)\s*,\s*([^)]+)\)/i);
+    if (match) {
+      let color1 = match[1].trim();
+      // Strip percentage (e.g., "oklch(...) 20%" -> "oklch(...)")
+      color1 = color1.replace(/\s+\d+%?$/, "");
+      return color1;
+    }
+    return "transparent";
+  } catch {
+    return "transparent";
+  }
+}
+
+/**
+ * Extracts the primary color from light-dark CSS functions.
+ */
+function resolveLightDark(lightDarkStr: string): string {
+  try {
+    const match = lightDarkStr.match(/light-dark\(\s*([^,]+)\s*,\s*([^)]+)\)/i);
+    if (match) {
+      return match[1].trim();
+    }
+    return "transparent";
+  } catch {
+    return "transparent";
+  }
+}
+
+/**
+ * Completely purges and translates any unsupported color spaces/functions
+ * (oklch, oklab, color-mix, light-dark) into standard rgb/rgba formulas.
+ */
+function replaceModernColorsWithRgba(styleStr: string): string {
+  if (!styleStr || typeof styleStr !== "string") return styleStr;
+
+  let current = styleStr;
+  let prev;
+
+  // Resolve light-dark helpers
+  do {
+    prev = current;
+    current = current.replace(/light-dark\([^)]+\)/gi, (match) => resolveLightDark(match));
+  } while (current !== prev);
+
+  // Resolve color-mix helpers
+  do {
+    prev = current;
+    current = current.replace(/color-mix\([^)]+\)/gi, (match) => resolveColorMix(match));
+  } while (current !== prev);
+
+  // Convert oklch occurrences
+  current = current.replace(/oklch\(([^)]+)\)/gi, (match) => oklchToRgba(match));
+
+  // Convert oklab occurrences
+  current = current.replace(/oklab\(([^)]+)\)/gi, (match) => oklabToRgba(match));
+
+  return current;
+}
+
+/**
+ * Clones an element and inlines all its computed styles,
+ * converting any unsupported oklch/oklab colors to rgb/rgba.
+ */
+function cloneWithInlinedStyles(original: HTMLElement): HTMLElement {
+  const clone = original.cloneNode(true) as HTMLElement;
+  const originalEls = [original, ...Array.from(original.querySelectorAll("*"))] as HTMLElement[];
+  const cloneEls = [clone, ...Array.from(clone.querySelectorAll("*"))] as HTMLElement[];
+
+  for (let i = 0; i < originalEls.length; i++) {
+    const origEl = originalEls[i];
+    const cloneEl = cloneEls[i];
+    if (!origEl || !cloneEl) continue;
+
+    try {
+      const computed = window.getComputedStyle(origEl);
+      
+      // Copy computed styles as inline styles
+      for (let j = 0; j < computed.length; j++) {
+        const prop = computed[j];
+        // Skip properties that can cause illegal/bad states or override layouts undesirably
+        if (prop.startsWith("-webkit-user-drag") || prop === "transition" || prop === "animation") {
+          continue;
+        }
+
+        let val = computed.getPropertyValue(prop);
+        if (val) {
+          // Completely sanitize modern CSS features
+          val = replaceModernColorsWithRgba(val);
+          cloneEl.style.setProperty(prop, val);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to inline styles for element:", origEl, e);
+    }
   }
 
-  // 5. Header Section
-  // Left: Brand Name & Subtitle
-  doc.setTextColor(darkGreen[0], darkGreen[1], darkGreen[2]);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.text("HALALCHAIN", 18, 25);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
-  doc.text("SHARIA & BLOCKCHAIN COMPLIANCE LEDGER", 18, 29);
+  // Ensure the cloned root element is fixed and placed off-screen so it is rendered nicely but invisible to the user
+  clone.style.position = "fixed";
+  clone.style.left = "-9999px";
+  clone.style.top = "0";
+  clone.style.visibility = "visible";
+  clone.style.display = "block";
+  clone.style.zIndex = "-9999";
 
-  // Right: License Serial Number & Status Badge
-  doc.setFont("courier", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(goldColor[0], goldColor[1], goldColor[2]);
-  doc.text(`SERIAL NO: ${project.certificateNumber}`, pageWidth - 18, 24, { align: "right" });
+  return clone;
+}
 
-  // Status Badge
-  const badgeWidth = 24;
-  const badgeHeight = 6;
-  const badgeX = pageWidth - 18 - badgeWidth;
-  const badgeY = 27;
-  doc.setFillColor(emeraldColor[0], emeraldColor[1], emeraldColor[2]);
-  doc.rect(badgeX, badgeY, badgeWidth, badgeHeight, "F");
-  
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7);
-  doc.setTextColor(255, 255, 255);
-  doc.text(project.status.toUpperCase(), badgeX + badgeWidth / 2, badgeY + 4.2, { align: "center" });
+/**
+ * Generates a beautiful 2-page Certificate of Sharia Compliance in PDF format.
+ * - Page 1: English Certificate
+ * - Page 2: Arabic Certificate
+ * Utilizes style-inlining and html2canvas for 100% robust rendering across all browsers.
+ */
+export async function generateCertificatePDF(
+  project: RegistryProject,
+  onProgress?: (message: string) => void
+): Promise<void> {
+  // Add a small delay to ensure the off-screen DOM is completely mounted
+  if (onProgress) onProgress("Initializing templates...");
+  await new Promise((resolve) => setTimeout(resolve, 400));
 
-  // Thin line dividing header
-  doc.setDrawColor(borderLight[0], borderLight[1], borderLight[2]);
-  doc.setLineWidth(0.3);
-  doc.line(18, 35, pageWidth - 18, 35);
+  const englishElement = document.getElementById("pdf-template-english");
+  const arabicElement = document.getElementById("pdf-template-arabic");
 
-  // 6. Certificate Title
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text("CERTIFICATE OF SHARIA COMPLIANCE", cx, 47, { align: "center" });
+  if (!englishElement || !arabicElement) {
+    console.error("PDF templates not found in the DOM.");
+    if (onProgress) onProgress("Error: Templates not found. Please try again.");
+    return;
+  }
 
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(11);
-  doc.setTextColor(emeraldColor[0], emeraldColor[1], emeraldColor[2]);
-  doc.text("Official Compliance Certification & Ethical Clearance Documentation", cx, 53, { align: "center" });
+  let englishClone: HTMLElement | null = null;
+  let arabicClone: HTMLElement | null = null;
+  const disabledSheets: CSSStyleSheet[] = [];
 
-  // Center golden divider line
-  doc.setDrawColor(goldColor[0], goldColor[1], goldColor[2]);
-  doc.setLineWidth(0.5);
-  doc.line(cx - 30, 58, cx + 30, 58);
+  try {
+    console.log("PDF generator: Loading template assets...");
+    if (onProgress) onProgress("Loading certificate assets...");
 
-  // 7. Core Statement
-  doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.text("This document cryptographically certifies that the decentralized protocol named below:", cx, 66, { align: "center" });
+    // Wait for all images inside both templates to be fully loaded before rendering
+    await Promise.all([
+      waitForImages(englishElement),
+      waitForImages(arabicElement)
+    ]);
 
-  // Project Name Display
-  doc.setTextColor(darkGreen[0], darkGreen[1], darkGreen[2]);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(24);
-  doc.text(project.name.toUpperCase(), cx, 77, { align: "center" });
+    if (onProgress) onProgress("Preparing high-fidelity layouts...");
+    console.log("PDF generator: Creating style-inlined clones...");
 
-  // Token Ticker Display
-  doc.setTextColor(emeraldColor[0], emeraldColor[1], emeraldColor[2]);
-  doc.setFont("courier", "bold");
-  doc.setFontSize(12);
-  doc.text(`TICKER: ${project.tokenTicker}`, cx, 83, { align: "center" });
+    // Create high-fidelity clones with inlined styles and oklch colors converted to rgb/rgba
+    englishClone = cloneWithInlinedStyles(englishElement);
+    arabicClone = cloneWithInlinedStyles(arabicElement);
 
-  // Auditing Body statement
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9.5);
-  const auditStatement = "has undergone complete theological, economic, and smart contract audit procedures. The review was conducted independently by the HalalChain Resident Scholars and Technical Audit Team in compliance with standard Islamic Finance (Fiqh al-Muamalat) parameters.";
-  const splitAuditStatement = doc.splitTextToSize(auditStatement, 160);
-  doc.text(splitAuditStatement, cx, 91, { align: "center" });
+    // Process the Arabic clone to shape and reverse its Arabic text nodes for perfect html2canvas layout
+    processArabicDOM(arabicClone);
 
-  // 8. Scope Specifications (Two-column Box Layout)
-  const boxY = 106;
-  const boxW = 174;
-  const boxH = 34;
-  const boxX = (pageWidth - boxW) / 2;
+    // Append clones to DOM so they are layout-enabled
+    document.body.appendChild(englishClone);
+    document.body.appendChild(arabicClone);
 
-  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
-  doc.setDrawColor(borderLight[0], borderLight[1], borderLight[2]);
-  doc.setLineWidth(0.4);
-  doc.rect(boxX, boxY, boxW, boxH, "FD");
+    // Disable all stylesheets so html2canvas doesn't try to parse unsupported color rules inside them
+    console.log("PDF generator: Temporarily disabling stylesheets to avoid parser crashes...");
+    const sheets = Array.from(document.styleSheets);
+    for (const sheet of sheets) {
+      try {
+        sheet.disabled = true;
+        disabledSheets.push(sheet);
+      } catch (e) {
+        console.warn("Failed to disable stylesheet:", e);
+      }
+    }
 
-  // Grid vertical separator
-  doc.line(cx, boxY + 4, cx, boxY + boxH - 4);
+    if (onProgress) onProgress("Rendering English certificate...");
+    console.log("PDF generator: starting English html2canvas rendering");
 
-  // Column 1 (Technical Specs)
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
-  doc.text("AUDITED SCOPE & TARGETS", boxX + 8, boxY + 7);
+    let englishCanvas;
+    try {
+      englishCanvas = await html2canvas(englishClone, {
+        scale: 2, // High resolution scaling for crisp fonts & details
+        useCORS: true, // Allow fetching the logo image correctly
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+    } catch (err: any) {
+      console.error("English canvas render failed:", err);
+      throw new Error(`English rendering failed: ${err?.message || err}`);
+    }
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  doc.text(`Blockchain Platform:   ${project.blockchain}`, boxX + 8, boxY + 14);
-  doc.text(`Technical Category:   ${project.category}`, boxX + 8, boxY + 20);
-  doc.text(`Certification Type:   ${project.certificateType}`, boxX + 8, boxY + 26);
+    console.log("English template successfully rendered to canvas.");
+    if (onProgress) onProgress("Rendering Arabic certificate...");
+    console.log("PDF generator: starting Arabic html2canvas rendering");
 
-  // Column 2 (Security & Compliance Metrics)
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
-  doc.text("COMPLIANCE & GOVERNANCE METRICS", cx + 8, boxY + 7);
+    let arabicCanvas;
+    try {
+      arabicCanvas = await html2canvas(arabicClone, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        logging: false,
+      });
+    } catch (err: any) {
+      console.error("Arabic canvas render failed:", err);
+      throw new Error(`Arabic rendering failed: ${err?.message || err}`);
+    }
 
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(9);
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  doc.text(`Issue Date:               ${project.issueDate}`, cx + 8, boxY + 14);
-  doc.text(`Expiry Date:              ${project.expiryDate}`, cx + 8, boxY + 20);
-  
-  // Custom styled metric values
-  doc.text("Governance Score: ", cx + 8, boxY + 26);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(emeraldColor[0], emeraldColor[1], emeraldColor[2]);
-  doc.text(`${project.governanceScore}/100`, cx + 40, boxY + 26);
+    console.log("Arabic template successfully rendered to canvas.");
+    if (onProgress) onProgress("Assembling official document...");
 
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  doc.text("Risk Classification: ", cx + 8, boxY + 31);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(217, 119, 6); // Amber-600
-  doc.text(project.riskRating.toUpperCase(), cx + 40, boxY + 31);
+    // Create PDF with A4 dimensions (210mm x 297mm)
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
 
-  // 9. Audited Smart Contracts File List
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
-  doc.text("VERIFIED ON-CHAIN CONTRACT SOURCE FILES:", boxX, 147);
+    const pageWidth = 210;
+    const pageHeight = 297;
 
-  doc.setFont("courier", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  const filesList = project.auditedSmartContracts.join("  |  ");
-  const splitFiles = doc.splitTextToSize(filesList, boxW);
-  doc.text(splitFiles, boxX, 152);
+    // Convert Page 1 to high-quality JPEG and embed
+    const englishImgData = englishCanvas.toDataURL("image/jpeg", 0.98);
+    doc.addImage(englishImgData, "JPEG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
 
-  // 10. Sharia Board Scholar Summary Opinion
-  const opinionY = 163;
-  const opinionW = boxW;
-  const opinionH = 40;
-  const opinionX = boxX;
+    // Add Page 2
+    doc.addPage();
+    const arabicImgData = arabicCanvas.toDataURL("image/jpeg", 0.98);
+    doc.addImage(arabicImgData, "JPEG", 0, 0, pageWidth, pageHeight, undefined, "FAST");
 
-  // Draw gold-tinted highlight box
-  doc.setFillColor(254, 252, 243); // #fefcf3 (very soft amber/gold)
-  doc.setDrawColor(245, 230, 190); // light gold line
-  doc.setLineWidth(0.4);
-  doc.rect(opinionX, opinionY, opinionW, opinionH, "FD");
+    if (onProgress) onProgress("Downloading file...");
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(146, 64, 14); // amber-800
-  doc.text("RESIDENT SHARIA SCHOLAR BOARD EXECUTIVE OPINION", opinionX + 6, opinionY + 6);
+    // Save the finalized document
+    const fileName = `HalalChain_Compliance_Certificate_${project.id}.pdf`;
+    doc.save(fileName);
 
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(9);
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  const splitOpinion = doc.splitTextToSize(`"${project.residentScholarOpinion}"`, opinionW - 12);
-  doc.text(splitOpinion, opinionX + 6, opinionY + 14);
+    if (onProgress) onProgress("");
+  } catch (error: any) {
+    console.error("Failed to generate certificate PDF:", error);
+    if (onProgress) onProgress(`Error: ${error?.message || error}`);
+  } finally {
+    // 1. Restore stylesheets
+    console.log("PDF generator: Restoring stylesheets...");
+    for (const sheet of disabledSheets) {
+      try {
+        sheet.disabled = false;
+      } catch (e) {
+        console.warn("Failed to re-enable stylesheet:", e);
+      }
+    }
 
-  // Theological Clearance Seal Notice
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7.5);
-  doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
-  const clearanceNotice = "THEOLOGICAL STATEMENT: This certificate verifies that the audited system's on-chain distribution, minting, lockups, and yield logic do not contain interest accumulation channels (Riba), dynamic gambling triggers (Maysir), or critical informational asymmetry (Gharar). Governance complies with mutual consultation principles (Shura).";
-  const splitNotice = doc.splitTextToSize(clearanceNotice, boxW);
-  doc.text(splitNotice, boxX, 211);
-
-  // 11. Signatures & Seals Section
-  const sigY = 236;
-
-  // Left Signature
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  doc.text("Dr. Salim Al-Othman", boxX + 10, sigY);
-  
-  doc.setDrawColor(borderLight[0], borderLight[1], borderLight[2]);
-  doc.setLineWidth(0.3);
-  doc.line(boxX + 5, sigY + 2, boxX + 50, sigY + 2);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
-  doc.text("CHAIRMAN, SHARIA BOARD", boxX + 13, sigY + 5);
-  doc.text("HALALCHAIN FOUNDATION", boxX + 14, sigY + 8);
-
-  // Right Signature
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.setTextColor(textDark[0], textDark[1], textDark[2]);
-  doc.text("Prof. Ibrahim Vance", boxX + boxW - 50, sigY);
-  
-  doc.line(boxX + boxW - 55, sigY + 2, boxX + boxW - 10, sigY + 2);
-  
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
-  doc.text("HEAD OF ON-CHAIN AUDIT", boxX + boxW - 49, sigY + 5);
-  doc.text("TECHNICAL STANDARDS DEPT.", boxX + boxW - 52, sigY + 8);
-
-  // 12. Verification & Blockchain QR Mock-up
-  const qrX = cx - 22;
-  const qrY = 252;
-  const qrW = 44;
-  const qrH = 21;
-
-  doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
-  doc.setDrawColor(borderLight[0], borderLight[1], borderLight[2]);
-  doc.setLineWidth(0.3);
-  doc.rect(qrX, qrY, qrW, qrH, "FD");
-
-  // Minimalist stylized visual barcode/QR representation
-  doc.setFillColor(darkGreen[0], darkGreen[1], darkGreen[2]);
-  doc.rect(qrX + 3, qrY + 3, 5, 5, "F");
-  doc.rect(qrX + 3, qrY + 13, 5, 5, "F");
-  doc.rect(qrX + 13, qrY + 3, 5, 5, "F");
-  // Some decorative lines representing QR density
-  doc.setDrawColor(textDark[0], textDark[1], textDark[2]);
-  doc.setLineWidth(0.5);
-  doc.line(qrX + 22, qrY + 4, qrX + 41, qrY + 4);
-  doc.line(qrX + 22, qrY + 7, qrX + 35, qrY + 7);
-  doc.line(qrX + 22, qrY + 10, qrX + 39, qrY + 10);
-  doc.line(qrX + 13, qrY + 13, qrX + 37, qrY + 13);
-  doc.line(qrX + 13, qrY + 16, qrX + 41, qrY + 16);
-
-  // Bottom Security taglines
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8);
-  doc.setTextColor(darkGreen[0], darkGreen[1], darkGreen[2]);
-  doc.text("CRYPTOGRAPHICALLY SECURED", cx, 280, { align: "center" });
-
-  doc.setFont("courier", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
-  doc.text(`VERIFY AT: https://compliance.halalchain.com/verify?id=${project.id}`, cx, 284, { align: "center" });
-
-  // Save the generated document
-  const fileName = `HalalChain_Certificate_${project.id}.pdf`;
-  doc.save(fileName);
+    // 2. Clean up clones
+    console.log("PDF generator: Cleaning up cloned elements...");
+    if (englishClone && englishClone.parentNode) {
+      englishClone.parentNode.removeChild(englishClone);
+    }
+    if (arabicClone && arabicClone.parentNode) {
+      arabicClone.parentNode.removeChild(arabicClone);
+    }
+  }
 }

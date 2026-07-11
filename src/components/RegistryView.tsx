@@ -6,6 +6,7 @@
 import React, { useState, useMemo } from "react";
 import { registryProjects, RegistryProject } from "../data/registry";
 import CertificatePreview from "./CertificatePreview";
+import PDFExportTemplates from "./PDFExportTemplates";
 import { generateCertificatePDF } from "../utils/pdfGenerator";
 import { Search, Filter, ArrowUpDown, Eye, CheckCircle, AlertTriangle, HelpCircle, X, ChevronRight, Download } from "lucide-react";
 
@@ -30,6 +31,7 @@ export default function RegistryView({ isRtl = false }: RegistryViewProps) {
 
   // Selected Project for Certificate Modal
   const [selectedProject, setSelectedProject] = useState<RegistryProject | null>(null);
+  const [pdfStatus, setPdfStatus] = useState("");
 
   // Extract unique values for filter dropdowns
   const blockchains = useMemo(() => {
@@ -375,14 +377,46 @@ export default function RegistryView({ isRtl = false }: RegistryViewProps) {
                 {isRtl ? "حلال تشين™ جهة ترخيص رقمي مستقلة" : "HalalChain™ Independent Certification Authority"}
               </span>
               <button
-                onClick={() => generateCertificatePDF(selectedProject)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-950 text-white rounded-xl text-xs font-bold hover:bg-emerald-900 transition-colors"
+                disabled={!!pdfStatus}
+                onClick={async () => {
+                  setPdfStatus(isRtl ? "جاري البدء..." : "Initializing...");
+                  await generateCertificatePDF(selectedProject, (msg) => {
+                    if (msg) {
+                      setPdfStatus(isRtl ? `جاري المعالجة... (${msg})` : msg);
+                    } else {
+                      setPdfStatus("");
+                    }
+                  });
+                }}
+                className={`inline-flex items-center gap-2 px-4 py-2 bg-emerald-950 text-white rounded-xl text-xs font-bold hover:bg-emerald-900 transition-colors ${
+                  pdfStatus ? "opacity-75 cursor-not-allowed" : ""
+                }`}
               >
-                <Download className="w-3.5 h-3.5" />
-                <span>{isRtl ? "تحميل بصيغة PDF" : "Download PDF File"}</span>
+                {pdfStatus ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    <span>{pdfStatus}</span>
+                  </span>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>{isRtl ? "تحميل بصيغة PDF" : "Download PDF File"}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Off-screen high-fidelity rendering mount for PDF exports */}
+      {selectedProject && (
+        <div 
+          className="fixed left-0 top-[200vh] pointer-events-none select-none z-[-100]" 
+          style={{ width: "1000px", height: "3000px" }}
+          aria-hidden="true"
+        >
+          <PDFExportTemplates project={selectedProject} />
         </div>
       )}
     </div>

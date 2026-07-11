@@ -8,7 +8,7 @@ import logoImg from "../assets/images/halalchain_logo_1783769453291.jpg";
 
 interface LogoProps {
   className?: string;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   showText?: boolean;
   showTagline?: boolean;
   isRtl?: boolean;
@@ -23,6 +23,7 @@ export default function Logo({
 }: LogoProps) {
   // Height and width mapping for the unified logo image (3:2 aspect ratio)
   const sizes = {
+    xs: { height: "h-14", iconSize: 56 },
     sm: { height: "h-28 sm:h-32", iconSize: 120 },
     md: { height: "h-40 sm:h-48", iconSize: 180 },
     lg: { height: "h-56 sm:h-64", iconSize: 240 },

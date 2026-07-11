@@ -144,7 +144,7 @@ export default function CertificatePreview({ project, isRtl = false }: Certifica
       <div className="mb-8 border border-amber-500/15 rounded-2xl p-4.5 bg-amber-50/30 text-xs">
         <div className="flex items-center gap-1.5 mb-1 text-amber-800 font-bold uppercase tracking-wider">
           <Award className="w-4 h-4 text-amber-600" />
-          <span>Resident Sharia Scholar Council Opinion / رأي الهيئة الشرعية</span>
+          <span>Resident Sharia Scholar Council Opinion / <span className="tracking-normal normal-case">رأي الهيئة الشرعية</span></span>
         </div>
         <p className="text-slate-700 italic leading-relaxed mb-2">{project.residentScholarOpinion}</p>
         <div className="w-full h-px bg-amber-500/10 my-2" />
