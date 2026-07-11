@@ -1,0 +1,6 @@
+{
+  "name": "HalalChain",
+  "description": "Where Blockchain Meets Sharia - The premier independent Sharia compliance and certification platform for cryptocurrencies, protocols, smart contracts, and Web3 tokenomics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
