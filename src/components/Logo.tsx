@@ -48,7 +48,7 @@ export default function Logo({
       ) : (
         // Crop/zoom to show only the top iconic star mark when text is hidden
         <div
-          className="relative overflow-hidden shrink-0 rounded-full bg-white"
+          className="relative overflow-hidden shrink-0 rounded-full bg-transparent"
           style={{ width: currentSize.iconSize, height: currentSize.iconSize }}
         >
           <img

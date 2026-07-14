@@ -7,28 +7,59 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-/* Custom premium scrollbar styling */
+/* Custom premium luxury scrollbar styling */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f8fafc;
+  background: #fdfdfc;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d4af37;
+  border: 2px solid #fdfdfc;
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #b5922c;
 }
 
 /* Star pattern class */
 .bg-star-pattern {
   background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l5.878 17.634H54.49L39.427 28.541 45.305 46.175 30 35.268 14.695 46.175 20.573 28.541 5.51 17.634h18.612L30 0z' fill='%23D4AF37' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+
+/* Luxury Lift effect for hover states */
+.hover-lift {
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(181, 146, 44, 0.08);
+  border-color: rgba(212, 175, 55, 0.45);
+}
+
+/* Floating animation for elegant interactive feel */
+@keyframes elegant-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-elegant-float {
+  animation: elegant-float 6s ease-in-out infinite;
+}
+
+/* Soft gold glow animation */
+@keyframes luxury-pulse {
+  0%, 100% { box-shadow: 0 0 0 0px rgba(212, 175, 55, 0.15); }
+  50% { box-shadow: 0 0 25px 6px rgba(212, 175, 55, 0.35); }
+}
+
+.animate-luxury-pulse {
+  animation: luxury-pulse 3s infinite;
 }
 
 /* Print Styles for Certificate Download */
@@ -49,3 +80,4 @@
     padding: 0 !important;
   }
 }
+

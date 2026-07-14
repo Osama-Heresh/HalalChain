@@ -11,6 +11,7 @@ import ServicesView from "./components/ServicesView";
 import MethodologyView from "./components/MethodologyView";
 import RegistryView from "./components/RegistryView";
 import VerificationView from "./components/VerificationView";
+import IslamicWatermark from "./components/IslamicWatermark";
 import { blogPosts, glossaryTerms, faqItems, BlogPost } from "./data/resources";
 import { translations as generalTranslations } from "./data/translations";
 import { 
@@ -43,7 +44,6 @@ import {
   Briefcase
 } from "lucide-react";
 
-// Types for Team Members
 interface TeamMember {
   name: string;
   nameAr: string;
@@ -60,37 +60,56 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<string>("home");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
-  // Resources Search / Filters state
+  // Inner Sub-Tab states for simplified workspaces
+  const [screeningSubTab, setScreeningSubTab] = useState<"services" | "methodology">("services");
+  const [registrySubTab, setRegistrySubTab] = useState<"explore" | "verify">("explore");
+  const [pricingSubTab, setPricingSubTab] = useState<"rates" | "insights" | "glossary" | "faq">("rates");
+
+  // Blog / Resources states
   const [blogSearch, setBlogSearch] = useState("");
   const [selectedBlogCategory, setSelectedBlogCategory] = useState("All");
   const [selectedArticle, setSelectedArticle] = useState<BlogPost | null>(null);
 
-  // Contact form submission state
-  const [contactForm, setContactForm] = useState({ name: "", email: "", company: "", service: "Sharia Compliance Certificate", message: "" });
+  // Contact Form states
+  const [contactForm, setContactForm] = useState({ 
+    name: "", 
+    email: "", 
+    company: "", 
+    service: "Sharia Compliance Certificate", 
+    message: "" 
+  });
   const [contactSuccess, setContactSuccess] = useState(false);
 
   const isRtl = lang === "ar";
   const t = generalTranslations[lang];
 
+  // Helper function to handle seamless cross-tab links
+  const navigateTo = (tabId: string, subTabId?: string) => {
+    setActiveTab(tabId);
+    setIsMobileMenuOpen(false);
+    if (tabId === "screening" && subTabId) {
+      setScreeningSubTab(subTabId as any);
+    } else if (tabId === "registry" && subTabId) {
+      setRegistrySubTab(subTabId as any);
+    } else if (tabId === "pricing" && subTabId) {
+      setPricingSubTab(subTabId as any);
+    }
+  };
+
   // Dynamic Browser Title and SEO Metadata Update
   useEffect(() => {
     const pageNames: { [key: string]: { en: string; ar: string } } = {
-      home: { en: "Where Blockchain Meets Sharia", ar: "حيث تلتقي التقنية بالشريعة" },
-      services: { en: "Our Screening Services", ar: "خدمات التدقيق والتصديق" },
-      methodology: { en: "AAOIFI Screening Methodology", ar: "منهجية الفحص والمطابقة" },
-      registry: { en: "Global Halal Web3 Registry", ar: "السجل الرقمي العالمي الحلال" },
-      verify: { en: "Verify Certificate Legitimacy", ar: "التحقق الفوري من التراخيص" },
-      pricing: { en: "Enterprise Validation Pricing", ar: "خطط الأسعار ورسوم التدقيق" },
-      resources: { en: "Research, Glossary & FAQ", ar: "المدونة والبحوث والقاموس" },
-      about: { en: "Independent Advisory Board", ar: "من نحن واستقلاليتنا" },
-      contact: { en: "Connect with Compliance Office", ar: "اتصل بمكتب التوافق" },
+      home: { en: "Independent Sharia Authority & Advisory Council", ar: "الهيئة المستقلة ومجلس الرقابة الشرعية" },
+      screening: { en: "Screening Services & Methodology Hub", ar: "منصة خدمات ومنهجية التدقيق الشرعي" },
+      registry: { en: "Global Certified Web3 Registry & Verification", ar: "السجل الحلال العالمي والتحقق من التراخيص" },
+      pricing: { en: "Enterprise Compliance rates & Theological Knowledge", ar: "باقات الأسعار والبحوث الفقهية المعاصرة" },
+      contact: { en: "Connect with Global Compliance Headquarters", ar: "مكتب الاتصال وقنوات التوافق الشرعي" },
     };
 
     const currentMeta = pageNames[activeTab] || pageNames.home;
     const suffix = lang === "en" ? "HalalChain™" : "حلال تشين™";
     document.title = `${currentMeta[lang]} | ${suffix}`;
 
-    // Update Meta Description
     let metaDesc = document.querySelector('meta[name="description"]');
     if (!metaDesc) {
       metaDesc = document.createElement("meta");
@@ -108,7 +127,7 @@ export default function App() {
   // Scroll to top on tab change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [activeTab]);
+  }, [activeTab, screeningSubTab, registrySubTab, pricingSubTab]);
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,13 +146,10 @@ export default function App() {
       post.excerpt.toLowerCase().includes(blogSearch.toLowerCase()) ||
       post.excerptAr.includes(blogSearch);
 
-    const postCat = post.category;
-    const matchesCategory = selectedBlogCategory === "All" || postCat === selectedBlogCategory;
-
+    const matchesCategory = selectedBlogCategory === "All" || post.category === selectedBlogCategory;
     return matchesSearch && matchesCategory;
   });
 
-  // Team Council dataset
   const boardMembers: TeamMember[] = [
     {
       name: "Dr. Salim Al-Othman",
@@ -170,75 +186,74 @@ export default function App() {
   return (
     <div
       id="halalchain-main-viewport"
-      className="min-h-screen bg-slate-50/60 flex flex-col justify-between font-sans selection:bg-emerald-800 selection:text-white transition-all relative"
+      className="min-h-screen bg-[#FCFBF7] flex flex-col justify-between font-sans selection:bg-emerald-800 selection:text-white transition-all relative"
       dir={isRtl ? "rtl" : "ltr"}
     >
-      {/* Background Islamic Watermark Star Ornament */}
-      <div className="absolute inset-0 opacity-[0.015] pointer-events-none bg-star-pattern select-none z-0" />
+      {/* Background Islamic Watermark Star Ornament (Suits the site coloring, JIBEP book-cover styled) */}
+      <IslamicWatermark className="absolute inset-0 select-none z-0 pointer-events-none" color="mixed" opacity={0.35} />
 
       {/* HEADER NAVBAR */}
       <header
         id="halalchain-primary-header"
-        className="sticky top-0 w-full z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm shadow-slate-100/40 transition-all"
+        className="sticky top-0 w-full z-40 bg-[#FCFBF7]/90 backdrop-blur-md border-b border-[#d4af37]/15 shadow-sm transition-all"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 flex items-center justify-between relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between relative z-10">
           
           {/* Logo Brand lockup */}
-          <button onClick={() => setActiveTab("home")} className="focus:outline-none">
+          <button onClick={() => navigateTo("home")} className="focus:outline-none transition-transform hover:scale-[1.02]">
             <Logo size="md" isRtl={isRtl} />
           </button>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5">
+          {/* Desktop Navigation Links (Simplified down to 5 Master Sections) */}
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2">
             {[
-              { id: "home", label: t.navHome },
-              { id: "services", label: t.navServices },
-              { id: "methodology", label: t.navMethodology },
-              { id: "registry", label: t.navRegistry },
-              { id: "verify", label: t.navVerification },
-              { id: "pricing", label: t.navPricing },
-              { id: "resources", label: t.navBlog },
-              { id: "about", label: t.navAbout },
-              { id: "contact", label: t.navContact },
+              { id: "home", label: isRtl ? "الرئيسية والمجلس" : "Home & Board" },
+              { id: "screening", label: isRtl ? "خدمات ومنهجية التدقيق" : "Screening Hub" },
+              { id: "registry", label: isRtl ? "السجل الرقمي والتحقق" : "Registry & Verify" },
+              { id: "pricing", label: isRtl ? "الأسعار والمعرفة" : "Pricing & Insights" },
+              { id: "contact", label: isRtl ? "مكتب الاتصال" : "Connect Office" },
             ].map((link) => {
               const isActive = activeTab === link.id;
               return (
                 <button
                   key={link.id}
-                  onClick={() => setActiveTab(link.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs xl:text-[13px] font-semibold tracking-tight transition-all ${
+                  onClick={() => navigateTo(link.id)}
+                  className={`px-4 py-2 rounded-full text-sm font-bold tracking-tight transition-all duration-300 relative ${
                     isActive
-                      ? "text-emerald-900 bg-emerald-50 border border-emerald-100"
-                      : "text-slate-600 hover:text-emerald-900 hover:bg-slate-100/50"
+                      ? "text-emerald-950 bg-emerald-50/80 border border-[#d4af37]/30 shadow-sm"
+                      : "text-slate-600 hover:text-emerald-950 hover:bg-emerald-50/30"
                   }`}
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {isActive && (
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#d4af37] animate-pulse" />
+                  )}
                 </button>
               );
             })}
           </nav>
 
           {/* Right side Language Switcher & Call-To-Action */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-4">
             {/* Bilingual Switcher */}
             <button
               onClick={() => setLang(lang === "en" ? "ar" : "en")}
-              className="inline-flex items-center gap-1.5 px-4 py-2 border border-slate-200 hover:bg-slate-50 rounded-full text-xs font-bold text-slate-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 border border-slate-200/80 hover:border-[#d4af37]/40 hover:bg-slate-100/50 rounded-full text-xs font-extrabold text-slate-700 transition-all duration-300 cursor-pointer"
             >
-              <Globe className="w-3.5 h-3.5" />
+              <Globe className="w-4 h-4 text-emerald-800" />
               <span>{lang === "en" ? "العربية" : "English"}</span>
             </button>
 
             {/* Main Primary Action Button */}
             <button
-              onClick={() => setActiveTab("contact")}
-              className="px-5 py-2.5 bg-[#064E3B] text-white text-xs font-bold rounded-full hover:bg-[#022C22] transition-all shadow-md shadow-emerald-950/15"
+              onClick={() => navigateTo("contact")}
+              className="px-6 py-3 bg-[#064E3B] text-white text-xs font-extrabold rounded-full hover:bg-[#022C22] transition-all duration-300 shadow-md hover:shadow-lg shadow-emerald-950/15 border border-[#d4af37]/20 hover:-translate-y-0.5 cursor-pointer"
             >
               {t.getCertified}
             </button>
           </div>
 
-          {/* Mobile Hamburguer button */}
+          {/* Mobile Hamburger button */}
           <div className="lg:hidden flex items-center gap-2">
             <button
               onClick={() => setLang(lang === "en" ? "ar" : "en")}
@@ -258,45 +273,35 @@ export default function App() {
 
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-200 bg-white p-4 space-y-2 animate-in fade-in duration-200">
+          <div className="lg:hidden border-t border-slate-200 bg-white p-5 space-y-3 animate-in fade-in duration-200">
             {[
-              { id: "home", label: t.navHome },
-              { id: "services", label: t.navServices },
-              { id: "methodology", label: t.navMethodology },
-              { id: "registry", label: t.navRegistry },
-              { id: "verify", label: t.navVerification },
-              { id: "pricing", label: t.navPricing },
-              { id: "resources", label: t.navBlog },
-              { id: "about", label: t.navAbout },
-              { id: "contact", label: t.navContact },
+              { id: "home", label: isRtl ? "الرئيسية والمجلس" : "Home & Board" },
+              { id: "screening", label: isRtl ? "خدمات ومنهجية التدقيق" : "Screening Hub" },
+              { id: "registry", label: isRtl ? "السجل الرقمي والتحقق" : "Registry & Verify" },
+              { id: "pricing", label: isRtl ? "الأسعار والمعرفة" : "Pricing & Insights" },
+              { id: "contact", label: isRtl ? "مكتب الاتصال" : "Connect Office" },
             ].map((link) => {
               const isActive = activeTab === link.id;
               return (
                 <button
                   key={link.id}
-                  onClick={() => {
-                    setActiveTab(link.id);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className={`w-full block text-left px-4 py-3 rounded-full text-sm font-semibold ${
+                  onClick={() => navigateTo(link.id)}
+                  className={`w-full block px-5 py-3.5 rounded-full text-sm font-bold ${
                     isRtl ? "text-right" : "text-left"
                   } ${
                     isActive
                       ? "bg-[#064E3B] text-white"
-                      : "text-slate-600 hover:bg-slate-50"
+                      : "text-slate-700 hover:bg-slate-50"
                   }`}
                 >
                   {link.label}
                 </button>
               );
             })}
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-3 border-t border-slate-100">
               <button
-                onClick={() => {
-                  setActiveTab("contact");
-                  setIsMobileMenuOpen(false);
-                }}
-                className="w-full text-center block px-4 py-3 bg-[#064E3B] text-white rounded-full text-sm font-bold shadow-md shadow-emerald-900/10"
+                onClick={() => navigateTo("contact")}
+                className="w-full text-center block px-5 py-3.5 bg-[#064E3B] text-white rounded-full text-sm font-bold shadow-md shadow-emerald-900/10"
               >
                 {t.getCertified}
               </button>
@@ -308,61 +313,61 @@ export default function App() {
       {/* PRIMARY WORKSPACE */}
       <main id="halalchain-primary-workspace" className="flex-grow">
         
-        {/* VIEW: HOME */}
+        {/* VIEW: HOME & BOARD */}
         {activeTab === "home" && (
           <div className="w-full">
             {/* HERO HERO SECTION */}
-            <section className="relative overflow-hidden pt-12 pb-20 md:py-24 bg-gradient-to-b from-white via-slate-50/20 to-white border-b border-slate-100">
+            <section className="relative overflow-hidden pt-16 pb-24 md:py-32 bg-gradient-to-b from-white via-slate-50/10 to-white border-b border-slate-100">
               
               {/* Dynamic canvas backdrop */}
               <NetworkBg />
 
-              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
+              <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-10">
                 
                 {/* Premium Golden Announcement Label */}
-                <div className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-amber-500/10 border border-[#d4af37]/25 rounded-full text-xs font-semibold text-amber-700 tracking-wide animate-fade-in shadow-sm">
-                  <Sparkles className="w-3.5 h-3.5 text-[#d4af37]" />
+                <div className="inline-flex items-center gap-2 px-5 py-2 bg-amber-500/10 border border-[#d4af37]/35 rounded-full text-xs font-bold text-amber-800 tracking-wide animate-elegant-float shadow-sm">
+                  <Sparkles className="w-4 h-4 text-[#d4af37]" />
                   <span>{isRtl ? "الهيئة المرجعية المستقلة الأكبر لتصديق بروتوكولات الويب 3" : "The Authority in Independent Web3 Sharia Certification"}</span>
                 </div>
 
-                {/* Massive display Typography header */}
-                <h1 className="max-w-4xl mx-auto font-display font-bold text-4xl sm:text-5xl lg:text-6xl tracking-tight text-slate-950 leading-tight">
+                {/* Massive display Typography header with enhanced readable sizing */}
+                <h1 className="max-w-5xl mx-auto font-display font-bold text-4xl sm:text-5xl lg:text-6xl xl:text-7xl tracking-tight text-slate-950 leading-[1.15]">
                   {t.heroTitle}
                 </h1>
 
-                {/* Subtitle */}
-                <p className="max-w-2xl mx-auto text-base sm:text-lg text-slate-500 leading-relaxed font-normal">
+                {/* Subtitle with highly legible text sizes */}
+                <p className="max-w-3xl mx-auto text-lg sm:text-xl text-slate-600 leading-relaxed font-medium">
                   {t.heroSubtitle}
                 </p>
 
                 {/* Action Buttons Row */}
-                <div className="flex flex-col sm:flex-row justify-center items-center gap-3.5 max-w-md mx-auto">
+                <div className="flex flex-col sm:flex-row justify-center items-center gap-4 max-w-lg mx-auto pt-4">
                   <button
-                    onClick={() => setActiveTab("contact")}
-                    className="w-full sm:w-auto px-7 py-3.5 bg-[#064E3B] text-white rounded-full text-sm font-bold hover:bg-[#022C22] transition-all shadow-md shadow-emerald-950/15"
+                    onClick={() => navigateTo("contact")}
+                    className="w-full sm:w-auto px-8 py-4 bg-[#064E3B] text-white rounded-full text-sm font-extrabold hover:bg-[#022C22] hover-lift shadow-lg shadow-emerald-950/15 cursor-pointer"
                   >
                     {t.getCertified}
                   </button>
                   <button
-                    onClick={() => setActiveTab("verify")}
-                    className="w-full sm:w-auto px-7 py-3.5 bg-white border border-slate-200 text-slate-700 rounded-full text-sm font-bold hover:bg-slate-50 transition-colors shadow-sm"
+                    onClick={() => navigateTo("registry", "verify")}
+                    className="w-full sm:w-auto px-8 py-4 bg-white border border-slate-200 hover:border-[#d4af37]/50 text-slate-700 rounded-full text-sm font-extrabold hover-lift shadow-sm cursor-pointer"
                   >
                     {t.verifyCert}
                   </button>
                   <button
-                    onClick={() => setActiveTab("methodology")}
-                    className="w-full sm:w-auto px-4 py-3 text-emerald-800 text-sm font-bold hover:underline"
+                    onClick={() => navigateTo("screening", "methodology")}
+                    className="w-full sm:w-auto px-5 py-3 text-emerald-900 text-sm font-extrabold hover:underline cursor-pointer"
                   >
                     {t.viewMethodology}
                   </button>
                 </div>
 
-                {/* Live SaaS Preview embed (The mockup dashboard) */}
-                <div className="max-w-5xl mx-auto pt-8">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-slate-400 block mb-3 font-semibold">
-                    {isRtl ? "نظام المراقبة والتحليل الرقمي التابع لـ حلال تشين" : "HalalChain™ Live Telemetry & Compliance Interface Preview"}
+                {/* Live SaaS Preview embed */}
+                <div className="max-w-5xl mx-auto pt-12">
+                  <span className="text-xs font-mono uppercase tracking-[0.2em] text-slate-500 block mb-4 font-bold">
+                    {isRtl ? "نظام المراقبة والتحليل الشرعي الفوري — حلال تشين" : "HalalChain™ Live Telemetry & Compliance Interface Preview"}
                   </span>
-                  <div className="rounded-3xl overflow-hidden border border-slate-200/80 shadow-2xl shadow-slate-100/50 bg-white">
+                  <div className="rounded-3xl overflow-hidden border border-slate-200/80 shadow-2xl bg-white hover:border-[#d4af37]/30 transition-all duration-500">
                     <DashboardPreview isRtl={isRtl} />
                   </div>
                 </div>
@@ -370,83 +375,83 @@ export default function App() {
             </section>
 
             {/* INDEPENDENCE STATEMENT DISCLAIMER BANNER */}
-            <section className="bg-amber-50/10 border-y border-amber-500/10 py-8 relative">
-              <div className="max-w-5xl mx-auto px-4 text-center space-y-3 relative z-10">
-                <div className="flex flex-wrap items-center justify-center gap-3.5 text-xs font-bold text-amber-800 uppercase tracking-wider">
-                  <span className="px-3 py-1 bg-amber-100/70 border border-amber-200/40 rounded-full">{t.notExchange}</span>
-                  <span className="px-3 py-1 bg-amber-100/70 border border-amber-200/40 rounded-full">{t.notInvestment}</span>
-                  <span className="px-3 py-1 bg-amber-100/70 border border-amber-200/40 rounded-full">{t.notSeller}</span>
+            <section className="bg-amber-50/15 border-y border-amber-500/15 py-10 relative">
+              <div className="max-w-5xl mx-auto px-4 text-center space-y-4 relative z-10">
+                <div className="flex flex-wrap items-center justify-center gap-4 text-xs font-extrabold text-amber-800 uppercase tracking-widest">
+                  <span className="px-4 py-1.5 bg-amber-100/50 border border-[#d4af37]/20 rounded-full">{t.notExchange}</span>
+                  <span className="px-4 py-1.5 bg-amber-100/50 border border-[#d4af37]/20 rounded-full">{t.notInvestment}</span>
+                  <span className="px-4 py-1.5 bg-amber-100/50 border border-[#d4af37]/20 rounded-full">{t.notSeller}</span>
                 </div>
-                <p className="max-w-3xl mx-auto text-xs text-slate-500 leading-relaxed font-medium pt-1">
+                <p className="max-w-4xl mx-auto text-sm text-slate-600 leading-relaxed font-semibold">
                   {t.independentDisclaimer}
                 </p>
               </div>
             </section>
 
             {/* TRUST SECTION BENTO GRID */}
-            <section className="py-20 bg-white">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-                <div className="text-center space-y-3">
-                  <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#d4af37]">
+            <section className="py-24 bg-white">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+                <div className="text-center space-y-4">
+                  <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#d4af37]">
                     {isRtl ? "لماذا تختار حلال تشين؟" : "The Core Pillars of Trust"}
                   </span>
-                  <h2 className="font-display font-bold text-3xl text-slate-950 tracking-tight">
+                  <h2 className="font-display font-bold text-3xl sm:text-4xl text-slate-950 tracking-tight">
                     {t.trustTitle}
                   </h2>
-                  <p className="max-w-xl mx-auto text-sm text-slate-400">
+                  <p className="max-w-2xl mx-auto text-base text-slate-500 leading-relaxed font-medium">
                     {t.trustSubtitle}
                   </p>
                 </div>
 
-                {/* Bento Grid layout */}
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-5 max-w-5xl mx-auto">
-                  <div className="md:col-span-8 bg-slate-50/50 border border-slate-200/60 p-6 rounded-3xl flex flex-col justify-between hover:border-emerald-500/20 hover:shadow-xl hover:shadow-slate-100/50 transition-all text-left">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
-                      <Scale className="w-5 h-5 text-emerald-700" />
+                {/* Bento Grid layout with larger text and beautiful luxury hover frames */}
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 max-w-5xl mx-auto">
+                  <div className="md:col-span-8 bg-[#FCFBF7]/40 border border-slate-200/80 p-8 rounded-3xl flex flex-col justify-between hover-lift text-left">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-6">
+                      <Scale className="w-6 h-6 text-emerald-800" />
                     </div>
                     <div className={isRtl ? "text-right" : "text-left"}>
-                      <h4 className="font-display font-bold text-lg text-slate-900">{t.trustIndependentTitle}</h4>
-                      <p className="text-xs text-slate-500 mt-2 leading-relaxed">{t.trustIndependentDesc}</p>
+                      <h4 className="font-display font-bold text-xl text-slate-900">{t.trustIndependentTitle}</h4>
+                      <p className="text-sm text-slate-600 mt-3 leading-relaxed font-medium">{t.trustIndependentDesc}</p>
                     </div>
                   </div>
 
-                  <div className="md:col-span-4 bg-slate-50/50 border border-slate-200/60 p-6 rounded-3xl flex flex-col justify-between hover:border-emerald-500/20 hover:shadow-xl hover:shadow-slate-100/50 transition-all text-left">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
-                      <Lock className="w-5 h-5 text-emerald-700" />
+                  <div className="md:col-span-4 bg-[#FCFBF7]/40 border border-slate-200/80 p-8 rounded-3xl flex flex-col justify-between hover-lift text-left">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-6">
+                      <Lock className="w-6 h-6 text-emerald-800" />
                     </div>
                     <div className={isRtl ? "text-right" : "text-left"}>
-                      <h4 className="font-display font-bold text-lg text-slate-900">{t.trustTechTitle}</h4>
-                      <p className="text-xs text-slate-500 mt-2 leading-relaxed">{t.trustTechDesc}</p>
+                      <h4 className="font-display font-bold text-xl text-slate-900">{t.trustTechTitle}</h4>
+                      <p className="text-sm text-slate-600 mt-3 leading-relaxed font-medium">{t.trustTechDesc}</p>
                     </div>
                   </div>
 
-                  <div className="md:col-span-4 bg-slate-50/50 border border-slate-200/60 p-6 rounded-3xl flex flex-col justify-between hover:border-emerald-500/20 hover:shadow-xl hover:shadow-slate-100/50 transition-all text-left">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
-                      <Users className="w-5 h-5 text-emerald-700" />
+                  <div className="md:col-span-4 bg-[#FCFBF7]/40 border border-slate-200/80 p-8 rounded-3xl flex flex-col justify-between hover-lift text-left">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-6">
+                      <Users className="w-6 h-6 text-emerald-800" />
                     </div>
                     <div className={isRtl ? "text-right" : "text-left"}>
-                      <h4 className="font-display font-bold text-lg text-slate-900">{t.trustScholarsTitle}</h4>
-                      <p className="text-xs text-slate-500 mt-2 leading-relaxed">{t.trustScholarsDesc}</p>
+                      <h4 className="font-display font-bold text-xl text-slate-900">{t.trustScholarsTitle}</h4>
+                      <p className="text-sm text-slate-600 mt-3 leading-relaxed font-medium">{t.trustScholarsDesc}</p>
                     </div>
                   </div>
 
-                  <div className="md:col-span-4 bg-slate-50/50 border border-slate-200/60 p-6 rounded-3xl flex flex-col justify-between hover:border-emerald-500/20 hover:shadow-xl hover:shadow-slate-100/50 transition-all text-left">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
-                      <BookOpen className="w-5 h-5 text-emerald-700" />
+                  <div className="md:col-span-4 bg-[#FCFBF7]/40 border border-slate-200/80 p-8 rounded-3xl flex flex-col justify-between hover-lift text-left">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-6">
+                      <BookOpen className="w-6 h-6 text-emerald-800" />
                     </div>
                     <div className={isRtl ? "text-right" : "text-left"}>
-                      <h4 className="font-display font-bold text-lg text-slate-900">{t.trustMethodologyTitle}</h4>
-                      <p className="text-xs text-slate-500 mt-2 leading-relaxed">{t.trustMethodologyDesc}</p>
+                      <h4 className="font-display font-bold text-xl text-slate-900">{t.trustMethodologyTitle}</h4>
+                      <p className="text-sm text-slate-600 mt-3 leading-relaxed font-medium">{t.trustMethodologyDesc}</p>
                     </div>
                   </div>
 
-                  <div className="md:col-span-4 bg-slate-50/50 border border-slate-200/60 p-6 rounded-3xl flex flex-col justify-between hover:border-emerald-500/20 hover:shadow-xl hover:shadow-slate-100/50 transition-all text-left">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-4">
-                      <Activity className="w-5 h-5 text-emerald-700" />
+                  <div className="md:col-span-4 bg-[#FCFBF7]/40 border border-slate-200/80 p-8 rounded-3xl flex flex-col justify-between hover-lift text-left">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mb-6">
+                      <Activity className="w-6 h-6 text-emerald-800" />
                     </div>
                     <div className={isRtl ? "text-right" : "text-left"}>
-                      <h4 className="font-display font-bold text-lg text-slate-900">{t.trustMonitoringTitle}</h4>
-                      <p className="text-xs text-slate-500 mt-2 leading-relaxed">{t.trustMonitoringDesc}</p>
+                      <h4 className="font-display font-bold text-xl text-slate-900">{t.trustMonitoringTitle}</h4>
+                      <p className="text-sm text-slate-600 mt-3 leading-relaxed font-medium">{t.trustMonitoringDesc}</p>
                     </div>
                   </div>
                 </div>
@@ -454,53 +459,53 @@ export default function App() {
             </section>
 
             {/* ILLUSTRATED CERTIFICATION PROCESS TIMELINE */}
-            <section className="py-20 bg-slate-50/30 border-t border-slate-100">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-                <div className="text-center space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#d4af37]">
+            <section className="py-24 bg-slate-50/20 border-t border-slate-100">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+                <div className="text-center space-y-4">
+                  <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#d4af37]">
                     {isRtl ? "آلية العمل التفصيلية" : "How Certification Works"}
                   </span>
-                  <h2 className="font-display font-bold text-3xl text-slate-950 tracking-tight">
+                  <h2 className="font-display font-bold text-3xl sm:text-4xl text-slate-950 tracking-tight">
                     {t.procTitle}
                   </h2>
-                  <p className="max-w-xl mx-auto text-sm text-slate-400">
+                  <p className="max-w-2xl mx-auto text-base text-slate-500 leading-relaxed font-medium">
                     {t.procSubtitle}
                   </p>
                 </div>
 
                 {/* Timeline vertical/horizontal dynamic path */}
                 <div className="max-w-4xl mx-auto relative pt-6">
-                  {/* Decorative line */}
-                  <div className={`hidden md:block absolute top-[100px] bottom-[100px] ${isRtl ? "right-1/2 translate-x-1/2" : "left-1/2 -translate-x-1/2"} w-0.5 bg-dashed border-l border-emerald-800/10 z-0`} />
+                  {/* Decorative vertical line */}
+                  <div className={`hidden md:block absolute top-[100px] bottom-[100px] ${isRtl ? "right-1/2 translate-x-1/2" : "left-1/2 -translate-x-1/2"} w-0.5 border-l-2 border-dashed border-[#d4af37]/30 z-0`} />
 
-                  <div className="space-y-12">
+                  <div className="space-y-14">
                     {[
-                      { step: t.procStep1, desc: t.procStep1Desc, icon: <FileText className="w-4 h-4 text-[#d4af37]" /> },
-                      { step: t.procStep2, desc: t.procStep2Desc, icon: <Briefcase className="w-4 h-4 text-[#064E3B]" /> },
-                      { step: t.procStep3, desc: t.procStep3Desc, icon: <Coins className="w-4 h-4 text-[#064E3B]" /> },
-                      { step: t.procStep4, desc: t.procStep4Desc, icon: <Lock className="w-4 h-4 text-[#064E3B]" /> },
-                      { step: t.procStep5, desc: t.procStep5Desc, icon: <LineChart className="w-4 h-4 text-[#064E3B]" /> },
-                      { step: t.procStep6, desc: t.procStep6Desc, icon: <Users className="w-4 h-4 text-[#064E3B]" /> },
-                      { step: t.procStep7, desc: t.procStep7Desc, icon: <FileText className="w-4 h-4 text-[#d4af37]" /> },
-                      { step: t.procStep8, desc: t.procStep8Desc, icon: <Award className="w-4 h-4 text-[#d4af37]" /> },
-                      { step: t.procStep9, desc: t.procStep9Desc, icon: <Activity className="w-4 h-4 text-[#d4af37]" /> },
+                      { step: t.procStep1, desc: t.procStep1Desc, icon: <FileText className="w-5 h-5 text-[#d4af37]" /> },
+                      { step: t.procStep2, desc: t.procStep2Desc, icon: <Briefcase className="w-5 h-5 text-[#064E3B]" /> },
+                      { step: t.procStep3, desc: t.procStep3Desc, icon: <Coins className="w-5 h-5 text-[#064E3B]" /> },
+                      { step: t.procStep4, desc: t.procStep4Desc, icon: <Lock className="w-5 h-5 text-[#064E3B]" /> },
+                      { step: t.procStep5, desc: t.procStep5Desc, icon: <LineChart className="w-5 h-5 text-[#064E3B]" /> },
+                      { step: t.procStep6, desc: t.procStep6Desc, icon: <Users className="w-5 h-5 text-[#064E3B]" /> },
+                      { step: t.procStep7, desc: t.procStep7Desc, icon: <FileText className="w-5 h-5 text-[#d4af37]" /> },
+                      { step: t.procStep8, desc: t.procStep8Desc, icon: <Award className="w-5 h-5 text-[#d4af37]" /> },
+                      { step: t.procStep9, desc: t.procStep9Desc, icon: <Activity className="w-5 h-5 text-[#d4af37]" /> },
                     ].map((item, idx) => {
                       const isEven = idx % 2 === 0;
                       return (
-                        <div key={idx} className={`relative flex flex-col md:flex-row items-center gap-6 ${isRtl ? "md:flex-row-reverse" : ""} ${isEven ? "md:justify-start" : "md:justify-end"}`}>
+                        <div key={idx} className={`relative flex flex-col md:flex-row items-center gap-8 ${isRtl ? "md:flex-row-reverse" : ""} ${isEven ? "md:justify-start" : "md:justify-end"}`}>
                           
-                          {/* Anchor Node circle */}
-                          <div className="absolute top-6 md:top-1/2 md:-translate-y-1/2 md:left-1/2 md:-translate-x-1/2 w-10 h-10 rounded-full bg-white border-2 border-[#d4af37] shadow-md flex items-center justify-center z-10 shrink-0">
+                          {/* Anchor Node circle with custom gold pulsing */}
+                          <div className="absolute top-6 md:top-1/2 md:-translate-y-1/2 md:left-1/2 md:-translate-x-1/2 w-12 h-12 rounded-full bg-white border-2 border-[#d4af37] shadow-lg flex items-center justify-center z-10 shrink-0">
                             {item.icon}
                           </div>
 
-                          {/* Content Card */}
-                          <div className={`w-full md:w-[45%] bg-white border border-slate-200/80 p-5 rounded-3xl shadow-lg shadow-slate-100/50 text-left ${isRtl ? "text-right" : "text-left"} ${isEven ? "md:mr-auto" : "md:ml-auto"}`}>
-                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-amber-600 block">
+                          {/* Content Card with highly readable fonts */}
+                          <div className={`w-full md:w-[44%] bg-white border border-slate-200 p-6 md:p-8 rounded-3xl shadow-lg hover-lift text-left ${isRtl ? "text-right" : "text-left"} ${isEven ? "md:mr-auto" : "md:ml-auto"}`}>
+                            <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-700 block">
                               {isRtl ? `المرحلة 0${idx + 1}` : `Phase 0${idx + 1}`}
                             </span>
-                            <h4 className="font-display font-bold text-sm text-slate-900 mt-1">{item.step}</h4>
-                            <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{item.desc}</p>
+                            <h4 className="font-display font-extrabold text-base text-slate-900 mt-2">{item.step}</h4>
+                            <p className="text-sm text-slate-600 mt-2.5 leading-relaxed font-medium">{item.desc}</p>
                           </div>
                         </div>
                       );
@@ -509,402 +514,509 @@ export default function App() {
                 </div>
               </div>
             </section>
-          </div>
-        )}
 
-        {/* VIEW: SERVICES */}
-        {activeTab === "services" && (
-          <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <ServicesView isRtl={isRtl} />
-          </section>
-        )}
-
-        {/* VIEW: METHODOLOGY */}
-        {activeTab === "methodology" && (
-          <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <MethodologyView isRtl={isRtl} />
-          </section>
-        )}
-
-        {/* VIEW: REGISTRY */}
-        {activeTab === "registry" && (
-          <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <RegistryView isRtl={isRtl} />
-          </section>
-        )}
-
-        {/* VIEW: VERIFY */}
-        {activeTab === "verify" && (
-          <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <VerificationView isRtl={isRtl} />
-          </section>
-        )}
-
-        {/* VIEW: PRICING */}
-        {activeTab === "pricing" && (
-          <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 text-center">
-            <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#d4af37]">
-                {isRtl ? "باقات التدقيق والتصديق" : "Enterprise Compliance Rates"}
-              </span>
-              <h2 className="font-display font-bold text-3xl text-gray-950 tracking-tight">
-                {isRtl ? "رسوم مرنة ومبنية على حجم الكود" : "Predictable Pricing for Web3 Ecosystems"}
-              </h2>
-              <p className="max-w-md mx-auto text-xs text-gray-400">
-                {isRtl ? "اختر الخيار المناسب لمشروعك لتبدأ عملية التدقيق الفقهي والتقني الشامل." : "Choose the optimal plan to initiate compliance audits, scholarly reviews, and secure on-chain tracking."}
-              </p>
-            </div>
-
-            {/* Pricing Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto pt-6">
-              {/* Plan 1 */}
-              <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xl shadow-slate-100/50 flex flex-col justify-between text-left hover:border-emerald-500/20 transition-all">
-                <div className={isRtl ? "text-right" : "text-left"}>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">{isRtl ? "للمشاريع الفردية" : "TOKEN PROJECTS"}</span>
-                  <h3 className="font-display font-bold text-lg text-slate-900 mt-1">Starter Class</h3>
-                  <div className="py-4 font-mono">
-                    <span className="text-3xl font-bold text-slate-900">$7,500</span>
-                    <span className="text-xs text-slate-400"> / {isRtl ? "المشروع" : "audit"}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                    {isRtl ? "مثالي لمراجعة رموز ERC-20 الفردية، الرموز غير القابلة للاستبدال، أو العقود البسيطة لمرة واحدة." : "Designed for individual smart contracts, standard ERC-20 tokens, or basic fractional property designs."}
+            {/* MERGED: INDEPENDENT SHARIA ADVISORY COUNCIL */}
+            <section className="py-24 bg-white border-t border-slate-100">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+                <div className="text-center space-y-4">
+                  <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#d4af37]">
+                    {isRtl ? "المرجعية الأخلاقية والفقهية" : "THE SHARIA ADVISORY AUTHORITY"}
+                  </span>
+                  <h2 className="font-display font-bold text-3xl sm:text-4xl text-slate-950 tracking-tight">
+                    {t.aboutTitle}
+                  </h2>
+                  <p className="max-w-2xl mx-auto text-base text-slate-500 leading-relaxed font-medium">
+                    {t.aboutSubtitle}
                   </p>
                 </div>
-                <div className="space-y-3.5">
-                  <div className="w-full h-px bg-slate-100" />
-                  <ul className="space-y-2.5 text-xs text-slate-600 font-medium">
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> {isRtl ? "تدقيق برمجى واحد" : "1 Smart Contract Audit"}</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> {isRtl ? "فحص نموذج منفعة التوكن" : "Tokenomics Sharia Screening"}</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> {isRtl ? "فتوى شرعية معتمدة" : "Advisory Board Scholar Review"}</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> {isRtl ? "أرشفة لمدة سنة في السجل" : "1 Year Halal Registry Listing"}</li>
-                  </ul>
-                  <button onClick={() => setActiveTab("contact")} className="w-full py-3 bg-slate-100 hover:bg-slate-200/80 rounded-full text-xs font-bold text-slate-700 transition-colors mt-4">
-                    {isRtl ? "طلب فحص" : "Initiate Audit"}
-                  </button>
-                </div>
-              </div>
 
-              {/* Plan 2 */}
-              <div className="bg-[#022C22] border-2 border-[#d4af37]/60 rounded-3xl p-6 shadow-2xl shadow-emerald-950/20 flex flex-col justify-between text-left relative overflow-hidden">
-                <div className="absolute top-4 right-4 bg-[#d4af37]/20 text-[#d4af37] font-mono text-[9px] font-bold px-2.5 py-1 rounded-full border border-[#d4af37]/30">
-                  {isRtl ? "شائع" : "POPULAR"}
-                </div>
-                <div className={isRtl ? "text-right" : "text-left"}>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-300">{isRtl ? "للتطبيقات المتقدمة" : "DAPPS & PROTCOLS"}</span>
-                  <h3 className="font-display font-bold text-lg text-white mt-1">Professional Class</h3>
-                  <div className="py-4 font-mono">
-                    <span className="text-3xl font-bold text-white">$12,500</span>
-                    <span className="text-xs text-emerald-300"> / {isRtl ? "المشروع" : "audit"}</span>
+                {/* Mission / Vision Blocks */}
+                <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto ${isRtl ? "text-right" : "text-left"}`} dir={isRtl ? "rtl" : "ltr"}>
+                  <div className="bg-[#FCFBF7]/50 border border-slate-200 p-8 rounded-3xl hover-lift space-y-4">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                      <Award className="w-6 h-6 text-emerald-800" />
+                    </div>
+                    <h3 className="font-display font-bold text-xl text-slate-900">{t.aboutMission}</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed font-medium">{t.aboutMissionDesc}</p>
                   </div>
-                  <p className="text-xs text-emerald-100/70 leading-relaxed mb-6">
-                    {isRtl ? "مثالي للبروتوكولات التفاعلية اللامركزية (DAOs) ومجمعات السيولة وصناديق الوقف." : "Perfect for active decentralized applications (dApps), DAOs, staking protocols, and yield structures."}
-                  </p>
-                </div>
-                <div className="space-y-3.5">
-                  <div className="w-full h-px bg-emerald-900" />
-                  <ul className="space-y-2.5 text-xs text-emerald-100/95 font-medium">
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#d4af37]" /> {isRtl ? "تدقيق أمني شامل للكود" : "Full Smart Contract & Security Audit"}</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#d4af37]" /> {isRtl ? "تدقيق مالي جنائي ضد الربا" : "Riba & Financial Forensic Audit"}</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#d4af37]" /> {isRtl ? "حوكمة التصويت اللامركزي" : "DAO Governance Sharia Review"}</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#d4af37]" /> {isRtl ? "شارة تحقق في موقع المشروع" : "Embeddable Trust Badge & Web API"}</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-[#d4af37]" /> {isRtl ? "مراقبة ربع سنوية" : "Quarterly On-Chain Delta Review"}</li>
-                  </ul>
-                  <button onClick={() => setActiveTab("contact")} className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 rounded-full text-xs font-bold text-emerald-950 transition-colors mt-4">
-                    {isRtl ? "طلب فحص بروتوكول" : "Initiate Audit"}
-                  </button>
-                </div>
-              </div>
 
-              {/* Plan 3 */}
-              <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-xl shadow-slate-100/50 flex flex-col justify-between text-left hover:border-emerald-500/20 transition-all">
-                <div className={isRtl ? "text-right" : "text-left"}>
-                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">{isRtl ? "لشبكات الطبقة الأولى" : "LAYER-1 SYSTEMS"}</span>
-                  <h3 className="font-display font-bold text-lg text-slate-900 mt-1">Enterprise Class</h3>
-                  <div className="py-4 font-mono">
-                    <span className="text-3xl font-bold text-slate-900">Custom</span>
-                    <span className="text-xs text-slate-400"> {isRtl ? "حسب النطاق" : "Quote"}</span>
+                  <div className="bg-[#FCFBF7]/50 border border-slate-200 p-8 rounded-3xl hover-lift space-y-4">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+                      <Activity className="w-6 h-6 text-emerald-800" />
+                    </div>
+                    <h3 className="font-display font-bold text-xl text-slate-900">{t.aboutVision}</h3>
+                    <p className="text-sm text-slate-600 leading-relaxed font-medium">{t.aboutVisionDesc}</p>
                   </div>
-                  <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                    {isRtl ? "لشبكات بلوكشين متكاملة، منصات التوريق، والمحافظ السيادية." : "Designed for complete Layer-1 and Layer-2 blockchains, sovereign digital assets, and institutional RWA frameworks."}
-                  </p>
                 </div>
-                <div className="space-y-3.5">
-                  <div className="w-full h-px bg-slate-100" />
-                  <ul className="space-y-2.5 text-xs text-slate-600 font-medium">
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> {isRtl ? "تدقيق برمجى متعدد اللغات" : "Multi-Repo Technical Code Verification"}</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> {isRtl ? "جلسات مع الهيئة الفقهية" : "Direct Scholar Board Joint Workshops"}</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> {isRtl ? "دعم استشاري لتحديث الكود" : "Priority Code Update Retainer Advisory"}</li>
-                    <li className="flex items-center gap-2"><Check className="w-3.5 h-3.5 text-emerald-600" /> {isRtl ? "مراقبة مستمرة 12 شهر" : "12-Month Continuous Guard Telemetry"}</li>
-                  </ul>
-                  <button onClick={() => setActiveTab("contact")} className="w-full py-3 bg-[#064E3B] hover:bg-[#022C22] text-white rounded-full text-xs font-bold transition-colors mt-4">
-                    {isRtl ? "تواصل مع مكتب الإدارة" : "Contact Compliance Office"}
-                  </button>
-                </div>
-              </div>
-            </div>
 
-            {/* Optional Services */}
-            <div className={`max-w-4xl mx-auto pt-10 border-t border-slate-100 ${isRtl ? "text-right" : "text-left"}`}>
-              <h4 className="font-display font-bold text-sm text-gray-900 uppercase tracking-wider mb-4">
-                {isRtl ? "خدمات إضافية اختيارية" : "Optional & Ancillary Services"}
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-gray-600">
-                <div className="p-3 bg-white border border-slate-100 rounded-xl flex justify-between items-center shadow-sm">
-                  <span>{isRtl ? "مراجعة عاجلة للكود (خلال 7 أيام)" : "Priority Urgent Audit (7-Day Turnaround)"}</span>
-                  <span className="font-mono text-emerald-700 font-bold">+$2,500</span>
-                </div>
-                <div className="p-3 bg-white border border-slate-100 rounded-xl flex justify-between items-center shadow-sm">
-                  <span>{isRtl ? "تعديل رخصة أو دمج كود بروتوكول" : "Certificate Schema Update / Chain Migration"}</span>
-                  <span className="font-mono text-emerald-700 font-bold">+$1,500</span>
-                </div>
-                <div className="p-3 bg-white border border-gray-100 rounded-xl flex justify-between items-center">
-                  <span>{isRtl ? "تجديد سنوي مع التدقيق الجديد" : "Annual Compliance Monitoring Renewal"}</span>
-                  <span className="font-mono text-emerald-700 font-bold">Starting $6,000/yr</span>
-                </div>
-                <div className="p-3 bg-white border border-gray-100 rounded-xl flex justify-between items-center">
-                  <span>{isRtl ? "دعم وتدريب المطورين على الكود الآمن" : "Developer Sharia Code Architecture Training"}</span>
-                  <span className="font-mono text-emerald-700 font-bold">$350/hr</span>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* VIEW: RESOURCES (BLOG, GLOSSARY, FAQ) */}
-        {activeTab === "resources" && (
-          <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-            
-            {/* Page Header */}
-            <div className="text-center space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#d4af37]">
-                {isRtl ? "البحوث والمدونة والقاموس" : "Insights & Educational Center"}
-              </span>
-              <h2 className="font-display font-bold text-3xl text-gray-950 tracking-tight">
-                {isRtl ? "أدوات ومقالات المعرفة الفقهية للويب 3" : "Theological Research & Developer Resources"}
-              </h2>
-              <p className="max-w-md mx-auto text-xs text-gray-400">
-                {isRtl ? "تصفح آخر الأوراق البحثية، الفتاوى القانونية، قاموس المصطلحات، والأسئلة الشائعة." : "Stay informed with independent academic research, classical definitions, and official compliance FAQs."}
-              </p>
-            </div>
-
-            {/* Sub-view switcher: Blogs/Articles, Glossary, FAQ */}
-            <div className="max-w-4xl mx-auto">
-              <div className="grid grid-cols-3 bg-white p-1 rounded-xl border border-gray-100 text-xs font-bold mb-8">
-                <button
-                  onClick={() => setSelectedBlogCategory("All")}
-                  className={`py-2 px-3 rounded-lg transition-colors ${
-                    selectedBlogCategory === "All" ? "bg-emerald-950 text-white" : "text-gray-500 hover:text-gray-900"
-                  }`}
-                >
-                  {isRtl ? "الأبحاث والمدونة" : "Research & Blog"}
-                </button>
-                <button
-                  onClick={() => setSelectedBlogCategory("glossary")}
-                  className={`py-2 px-3 rounded-lg transition-colors ${
-                    selectedBlogCategory === "glossary" ? "bg-emerald-950 text-white" : "text-gray-500 hover:text-gray-900"
-                  }`}
-                >
-                  {isRtl ? "قاموس المصطلحات" : "Sharia Glossary"}
-                </button>
-                <button
-                  onClick={() => setSelectedBlogCategory("faq")}
-                  className={`py-2 px-3 rounded-lg transition-colors ${
-                    selectedBlogCategory === "faq" ? "bg-emerald-950 text-white" : "text-gray-500 hover:text-gray-900"
-                  }`}
-                >
-                  {isRtl ? "الأسئلة الشائعة" : "Platform FAQ"}
-                </button>
-              </div>
-
-              {/* RENDER: RESEARCH / BLOGS */}
-              {selectedBlogCategory !== "glossary" && selectedBlogCategory !== "faq" && (
-                <div className="space-y-6">
-                  {/* Blog Search bar */}
-                  <div className="relative max-w-sm mx-auto mb-6">
-                    <span className={`absolute inset-y-0 ${isRtl ? "left-3" : "right-3"} flex items-center pointer-events-none text-gray-400`}>
-                      <Search className="w-4 h-4" />
+                {/* Covenant of Independence Banner */}
+                <div className={`max-w-4xl mx-auto bg-gradient-to-tr from-emerald-950 to-emerald-900 text-white rounded-3xl p-8 md:p-10 relative overflow-hidden border border-[#d4af37]/35 shadow-xl ${isRtl ? "text-right" : "text-left"}`} dir={isRtl ? "rtl" : "ltr"}>
+                  <div className="absolute inset-0 opacity-5 pointer-events-none bg-star-pattern" />
+                  <div className="relative z-10 space-y-4 max-w-3xl">
+                    <span className="text-xs font-mono font-extrabold tracking-widest text-[#d4af37] bg-white/10 px-3 py-1.5 rounded-full uppercase">
+                      {isRtl ? "مبدأ الحياد والاستقلالية" : "OUR CONVENANT OF INDEPENDENCE"}
                     </span>
-                    <input
-                      type="text"
-                      placeholder={isRtl ? "البحث في الأبحاث والمدونة..." : "Search research or news..."}
-                      className={`w-full bg-white border border-gray-200 rounded-xl py-2 ${isRtl ? "pr-4 pl-10 text-right" : "pl-4 pr-10 text-left"} text-xs focus:outline-none focus:ring-1 focus:ring-emerald-700 transition-colors`}
-                      value={blogSearch}
-                      onChange={(e) => setBlogSearch(e.target.value)}
-                    />
+                    <h3 className="font-display font-bold text-xl md:text-2xl text-white">{t.aboutIndependenceTitle}</h3>
+                    <p className="text-sm md:text-base text-emerald-50/90 leading-relaxed font-medium">
+                      {t.aboutIndependenceDesc}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Core Pillars / Values list */}
+                <div className={`max-w-4xl mx-auto space-y-4 ${isRtl ? "text-right" : "text-left"}`}>
+                  <h3 className="font-display font-bold text-xl text-slate-900">{t.aboutValuesTitle}</h3>
+                  <div className="bg-[#FCFBF7]/50 border border-slate-200 p-8 rounded-3xl text-sm md:text-base text-slate-700 leading-relaxed whitespace-pre-line font-semibold">
+                    {t.aboutValuesDesc}
+                  </div>
+                </div>
+
+                {/* Board Members Grid List */}
+                <div className="space-y-10 pt-6">
+                  <div className="text-center space-y-2">
+                    <h3 className="font-display font-bold text-2xl text-slate-950 tracking-tight">
+                      {t.teamTitle}
+                    </h3>
+                    <p className="max-w-xl mx-auto text-sm text-slate-400 font-medium">
+                      {t.teamSubtitle}
+                    </p>
                   </div>
 
-                  {/* Blog Cards Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {filteredBlogs.map((post) => (
-                      <div key={post.id} className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex flex-col justify-between hover:border-gray-300 transition-all">
-                        <div className={`p-5 ${isRtl ? "text-right" : "text-left"}`}>
-                          <span className="font-mono text-[9px] font-bold text-amber-600 uppercase bg-amber-50 px-2 py-0.5 rounded border border-amber-200/50">
-                            {isRtl ? post.categoryAr : post.category}
-                          </span>
-                          <h4 className="font-display font-bold text-sm text-gray-900 mt-3 hover:text-emerald-800 cursor-pointer" onClick={() => setSelectedArticle(post)}>
-                            {isRtl ? post.titleAr : post.title}
-                          </h4>
-                          <p className="text-xs text-gray-400 mt-2 leading-relaxed">
-                            {isRtl ? post.excerptAr : post.excerpt}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                    {boardMembers.map((member, idx) => (
+                      <div key={idx} className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 hover-lift shadow-sm flex flex-col justify-between">
+                        <div className={isRtl ? "text-right" : "text-left"}>
+                          <div className="w-14 h-14 rounded-full bg-emerald-50 border border-[#d4af37]/35 flex items-center justify-center font-bold text-emerald-950 font-display text-xl mb-4">
+                            {member.name.charAt(0)}
+                          </div>
+                          <h4 className="font-display font-extrabold text-base text-slate-950">{isRtl ? member.nameAr : member.name}</h4>
+                          <p className="text-xs font-mono text-amber-700 uppercase font-bold mt-1">{isRtl ? member.roleAr : member.role}</p>
+                          <p className="text-xs text-slate-400 font-bold mt-1.5 font-mono">{isRtl ? member.institutionAr : member.institution}</p>
+                          <p className="text-sm text-slate-600 mt-4 leading-relaxed font-medium">
+                            {isRtl ? member.bioAr : member.bio}
                           </p>
-                        </div>
-                        <div className={`px-5 py-3 bg-gray-50 border-t border-gray-50 flex items-center justify-between text-[10px] text-gray-400 font-mono ${isRtl ? "flex-row-reverse" : "flex-row"}`}>
-                          <span>{post.date}</span>
-                          <button onClick={() => setSelectedArticle(post)} className="font-sans font-bold text-emerald-800 hover:underline inline-flex items-center gap-1">
-                            <span>{isRtl ? "اقرأ البحث" : "Read Article"}</span>
-                            <ArrowRight className="w-3 h-3" />
-                          </button>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* RENDER: SHARIA GLOSSARY */}
-              {selectedBlogCategory === "glossary" && (
-                <div className={`grid grid-cols-1 sm:grid-cols-2 gap-4 ${isRtl ? "text-right" : "text-left"}`}>
-                  {glossaryTerms.map((term, idx) => (
-                    <div key={idx} className="bg-white border border-gray-100 p-5 rounded-2xl shadow-sm space-y-2">
-                      <div className={`flex justify-between items-center ${isRtl ? "flex-row-reverse" : "flex-row"}`}>
-                        <span className="font-display font-bold text-base text-gray-900">{term.term}</span>
-                        <span className="text-sm font-bold text-emerald-800">{term.termAr}</span>
-                      </div>
-                      <div className="w-12 h-px bg-amber-500/20" />
-                      <p className="text-xs text-gray-500 leading-relaxed pt-1">
-                        {isRtl ? term.definitionAr : term.definition}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* RENDER: PLATFORM FAQ */}
-              {selectedBlogCategory === "faq" && (
-                <div className={`space-y-4 ${isRtl ? "text-right" : "text-left"}`}>
-                  {faqItems.map((item, idx) => (
-                    <div key={idx} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm">
-                      <h4 className="font-display font-bold text-sm text-gray-900 flex items-start gap-2">
-                        <HelpCircle className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-                        <span>{isRtl ? item.questionAr : item.question}</span>
-                      </h4>
-                      <p className={`text-xs text-gray-500 leading-relaxed mt-2.5 pl-6 ${isRtl ? "pr-6 pl-0" : "pl-6"}`}>
-                        {isRtl ? item.answerAr : item.answer}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-            </div>
-          </section>
+              </div>
+            </section>
+          </div>
         )}
 
-        {/* VIEW: ABOUT */}
-        {activeTab === "about" && (
-          <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
-            
-            {/* Top header */}
-            <div className="text-center space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#d4af37]">
-                {isRtl ? "المرجعية الأخلاقية والمهنية" : "THE ETHICAL AUTHORITY"}
+        {/* VIEW: SCREENING HUB (SERVICES + METHODOLOGY COMBINED) */}
+        {activeTab === "screening" && (
+          <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+            {/* Page Header */}
+            <div className="text-center space-y-3">
+              <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#d4af37]">
+                {isRtl ? "منصة الفحص الشرعي الرقمي" : "SHARIA SCREENING & AUDITING HUB"}
               </span>
-              <h2 className="font-display font-bold text-3xl text-gray-950 tracking-tight">
-                {t.aboutTitle}
+              <h2 className="font-display font-bold text-3xl sm:text-4xl text-slate-950 tracking-tight">
+                {isRtl ? "خدمات ومنهجية التوافق الشرعي" : "Screening Services & Formal Methodology"}
               </h2>
-              <p className="max-w-md mx-auto text-xs text-gray-400">
-                {t.aboutSubtitle}
+              <p className="max-w-2xl mx-auto text-base text-slate-500 font-semibold leading-relaxed">
+                {isRtl 
+                  ? "مجموعة متكاملة من خدمات فحص الرموز ومراجعة العقود الذكية لمنظومة الويب ٣، متكاملة مع منهجيات الأيوفي التفصيلية." 
+                  : "A unified suite of smart contract security audits, tokenomics assessments, and compliance methodologies modeled on classic Sharia Law."}
               </p>
             </div>
 
-            {/* Mission / Vision Blocks */}
-            <div className={`grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto ${isRtl ? "text-right" : "text-left"}`} dir={isRtl ? "rtl" : "ltr"}>
-              <div className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-                  <Award className="w-5 h-5 text-emerald-700" />
-                </div>
-                <h3 className="font-display font-bold text-lg text-gray-900">{t.aboutMission}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">{t.aboutMissionDesc}</p>
-              </div>
-
-              <div className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-                  <Activity className="w-5 h-5 text-emerald-700" />
-                </div>
-                <h3 className="font-display font-bold text-lg text-gray-900">{t.aboutVision}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">{t.aboutVisionDesc}</p>
-              </div>
-            </div>
-
-            {/* Strict Autonomy statement */}
-            <div className={`max-w-4xl mx-auto bg-gradient-to-tr from-emerald-950 to-emerald-900 text-white rounded-3xl p-6 md:p-8 relative overflow-hidden border border-[#d4af37]/20 ${isRtl ? "text-right" : "text-left"}`} dir={isRtl ? "rtl" : "ltr"}>
-              <div className="relative z-10 space-y-3 max-w-2xl">
-                <span className="text-xs font-mono font-bold tracking-widest text-[#d4af37] bg-[#d4af37]/10 px-2.5 py-1 rounded-full uppercase">
-                  {isRtl ? "مبدأ الحياد والاستقلالية" : "OUR CONVENANT OF INDEPENDENCE"}
-                </span>
-                <h3 className="font-display font-bold text-lg md:text-xl text-white">{t.aboutIndependenceTitle}</h3>
-                <p className="text-xs md:text-sm text-emerald-100/90 leading-relaxed">
-                  {t.aboutIndependenceDesc}
-                </p>
+            {/* Luxury Sub-Tab gold selector */}
+            <div className="max-w-md mx-auto">
+              <div className="grid grid-cols-2 bg-slate-100 p-1.5 rounded-full border border-slate-200 text-xs font-extrabold shadow-inner relative">
+                <button
+                  onClick={() => setScreeningSubTab("services")}
+                  className={`py-3.5 px-5 rounded-full transition-all duration-300 ${
+                    screeningSubTab === "services" 
+                      ? "bg-[#064E3B] text-[#FCFBF7] shadow-md border border-[#d4af37]/20" 
+                      : "text-slate-600 hover:text-emerald-950"
+                  }`}
+                >
+                  {isRtl ? "باقة الخدمات والتصديق" : "Our Certification Services"}
+                </button>
+                <button
+                  onClick={() => setScreeningSubTab("methodology")}
+                  className={`py-3.5 px-5 rounded-full transition-all duration-300 ${
+                    screeningSubTab === "methodology" 
+                      ? "bg-[#064E3B] text-[#FCFBF7] shadow-md border border-[#d4af37]/20" 
+                      : "text-slate-600 hover:text-emerald-950"
+                  }`}
+                >
+                  {isRtl ? "منهجية الفحص والمطابقة" : "Evaluation Methodology"}
+                </button>
               </div>
             </div>
 
-            {/* Core Values / Pillars */}
-            <div className={`max-w-4xl mx-auto space-y-4 ${isRtl ? "text-right" : "text-left"}`}>
-              <h3 className="font-display font-bold text-xl text-gray-900">{t.aboutValuesTitle}</h3>
-              <div className="bg-white border border-gray-100 p-6 rounded-2xl shadow-sm whitespace-pre-line text-xs md:text-sm text-gray-600 leading-relaxed">
-                {t.aboutValuesDesc}
+            {/* Render selected workspace */}
+            <div className="pt-6 animate-in fade-in duration-300">
+              {screeningSubTab === "services" ? (
+                <ServicesView isRtl={isRtl} />
+              ) : (
+                <MethodologyView isRtl={isRtl} />
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* VIEW: REGISTRY & VERIFY (REGISTRY + VERIFICATION COMBINED) */}
+        {activeTab === "registry" && (
+          <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+            {/* Page Header */}
+            <div className="text-center space-y-3">
+              <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#d4af37]">
+                {isRtl ? "بوابة التحقق الفوري والسجل العام" : "GLOBAL WEB3 VERIFICATION PORTAL"}
+              </span>
+              <h2 className="font-display font-bold text-3xl sm:text-4xl text-slate-950 tracking-tight">
+                {isRtl ? "السجل العالمي الحلال والتحقق من التراخيص" : "Global Halal Registry & Active Verification"}
+              </h2>
+              <p className="max-w-2xl mx-auto text-base text-slate-500 font-semibold leading-relaxed">
+                {isRtl 
+                  ? "تصفح المشروعات والبروتوكولات الحاصلة على رخص التوافق الشرعي النشطة، أو قم بالتحقق الفوري من رمز ترخيص الشهادة رقمياً." 
+                  : "Explore the global database of certified Sharia-compliant protocols, or instantly authenticate active license serial keys on-chain."}
+              </p>
+            </div>
+
+            {/* Luxury Sub-Tab gold selector */}
+            <div className="max-w-md mx-auto">
+              <div className="grid grid-cols-2 bg-slate-100 p-1.5 rounded-full border border-slate-200 text-xs font-extrabold shadow-inner">
+                <button
+                  onClick={() => setRegistrySubTab("explore")}
+                  className={`py-3.5 px-5 rounded-full transition-all duration-300 ${
+                    registrySubTab === "explore" 
+                      ? "bg-[#064E3B] text-[#FCFBF7] shadow-md border border-[#d4af37]/20" 
+                      : "text-slate-600 hover:text-emerald-950"
+                  }`}
+                >
+                  {isRtl ? "تصفح السجل الرقمي" : "Explore Certified Registry"}
+                </button>
+                <button
+                  onClick={() => setRegistrySubTab("verify")}
+                  className={`py-3.5 px-5 rounded-full transition-all duration-300 ${
+                    registrySubTab === "verify" 
+                      ? "bg-[#064E3B] text-[#FCFBF7] shadow-md border border-[#d4af37]/20" 
+                      : "text-slate-600 hover:text-emerald-950"
+                  }`}
+                >
+                  {isRtl ? "التحقق الفوري الفردي" : "Instant Certificate Verify"}
+                </button>
               </div>
             </div>
 
-            {/* Council Members Section */}
-            <div className="space-y-8">
-              <div className="text-center space-y-2">
-                <h3 className="font-display font-bold text-xl text-gray-950 tracking-tight">
-                  {t.teamTitle}
-                </h3>
-                <p className="max-w-md mx-auto text-xs text-gray-400">
-                  {t.teamSubtitle}
-                </p>
-              </div>
+            {/* Render selected workspace */}
+            <div className="pt-6 animate-in fade-in duration-300">
+              {registrySubTab === "explore" ? (
+                <RegistryView isRtl={isRtl} />
+              ) : (
+                <VerificationView isRtl={isRtl} />
+              )}
+            </div>
+          </section>
+        )}
 
-              {/* Members Grid list */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto pt-4">
-                {boardMembers.map((member, idx) => (
-                  <div key={idx} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm text-left flex flex-col justify-between">
+        {/* VIEW: PRICING & INSIGHTS (PRICING + RESOURCES/BLOG/GLOSSARY/FAQ COMBINED) */}
+        {activeTab === "pricing" && (
+          <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+            
+            {/* Page Header */}
+            <div className="text-center space-y-3">
+              <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#d4af37]">
+                {isRtl ? "المركز التجاري والتعليمي" : "COMMERCIAL & INSIGHTS PORTAL"}
+              </span>
+              <h2 className="font-display font-bold text-3xl sm:text-4xl text-slate-950 tracking-tight">
+                {isRtl ? "باقات التسعير والبحوث الفقهية والمعرفة" : "Enterprise Packages, Research & FAQs"}
+              </h2>
+              <p className="max-w-2xl mx-auto text-base text-slate-500 font-semibold leading-relaxed">
+                {isRtl 
+                  ? "استعرض خطط ورسوم تدقيق الأكواد، وتصفح آخر البحوث القانونية لفقهاء الويب ٣ وقاموس المصطلحات الفقهية المعاصرة." 
+                  : "View flexible audit packages, browse modern academic Sharia research, study terminology, or consult our platform FAQs."}
+              </p>
+            </div>
+
+            {/* Luxury Sub-Tab switcher (4 options) */}
+            <div className="max-w-2xl mx-auto">
+              <div className="grid grid-cols-2 sm:grid-cols-4 bg-slate-100 p-1.5 rounded-3xl sm:rounded-full border border-slate-200 text-[11px] font-extrabold gap-1 shadow-inner">
+                <button
+                  onClick={() => setPricingSubTab("rates")}
+                  className={`py-3 px-2 rounded-2xl sm:rounded-full transition-all duration-300 ${
+                    pricingSubTab === "rates" 
+                      ? "bg-[#064E3B] text-[#FCFBF7] shadow-sm border border-[#d4af37]/20" 
+                      : "text-slate-600 hover:text-emerald-950"
+                  }`}
+                >
+                  {isRtl ? "باقات الأسعار" : "Enterprise Rates"}
+                </button>
+                <button
+                  onClick={() => setPricingSubTab("insights")}
+                  className={`py-3 px-2 rounded-2xl sm:rounded-full transition-all duration-300 ${
+                    pricingSubTab === "insights" 
+                      ? "bg-[#064E3B] text-[#FCFBF7] shadow-sm border border-[#d4af37]/20" 
+                      : "text-slate-600 hover:text-emerald-950"
+                  }`}
+                >
+                  {isRtl ? "أوراق البحوث" : "Scientific Research"}
+                </button>
+                <button
+                  onClick={() => setPricingSubTab("glossary")}
+                  className={`py-3 px-2 rounded-2xl sm:rounded-full transition-all duration-300 ${
+                    pricingSubTab === "glossary" 
+                      ? "bg-[#064E3B] text-[#FCFBF7] shadow-sm border border-[#d4af37]/20" 
+                      : "text-slate-600 hover:text-emerald-950"
+                  }`}
+                >
+                  {isRtl ? "قاموس الشريعة" : "Sharia Glossary"}
+                </button>
+                <button
+                  onClick={() => setPricingSubTab("faq")}
+                  className={`py-3 px-2 rounded-2xl sm:rounded-full transition-all duration-300 ${
+                    pricingSubTab === "faq" 
+                      ? "bg-[#064E3B] text-[#FCFBF7] shadow-sm border border-[#d4af37]/20" 
+                      : "text-slate-600 hover:text-emerald-950"
+                  }`}
+                >
+                  {isRtl ? "الأسئلة الشائعة" : "Ecosystem FAQ"}
+                </button>
+              </div>
+            </div>
+
+            {/* RENDER DYNAMIC PRICING SUBTAB: rates */}
+            {pricingSubTab === "rates" && (
+              <div className="space-y-12 pt-4">
+                {/* Pricing Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                  {/* Plan 1 */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 hover-lift shadow-xl flex flex-col justify-between text-left">
                     <div className={isRtl ? "text-right" : "text-left"}>
-                      {/* Avatar Mock */}
-                      <div className="w-12 h-12 rounded-full bg-emerald-50 border border-[#d4af37]/20 flex items-center justify-center font-bold text-emerald-950 font-display text-lg mb-3">
-                        {member.name.charAt(0)}
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">{isRtl ? "للمشاريع الفردية" : "TOKEN PROJECTS"}</span>
+                      <h3 className="font-display font-extrabold text-xl text-slate-900 mt-2">Starter Class</h3>
+                      <div className="py-4 font-mono">
+                        <span className="text-4xl font-extrabold text-slate-950">$7,500</span>
+                        <span className="text-xs text-slate-500"> / {isRtl ? "المشروع" : "audit"}</span>
                       </div>
-                      <h4 className="font-display font-bold text-sm text-gray-900">{isRtl ? member.nameAr : member.name}</h4>
-                      <p className="text-[10px] font-mono text-amber-600 uppercase font-semibold mt-0.5">{isRtl ? member.roleAr : member.role}</p>
-                      <p className="text-xs text-gray-400 font-medium mt-1 font-mono">{isRtl ? member.institutionAr : member.institution}</p>
-                      <p className="text-xs text-gray-500 mt-3 leading-relaxed">
-                        {isRtl ? member.bioAr : member.bio}
+                      <p className="text-sm text-slate-600 leading-relaxed mb-6 font-medium">
+                        {isRtl ? "مثالي لمراجعة رموز ERC-20 الفردية، الرموز غير القابلة للاستبدال، أو العقود البسيطة لمرة واحدة." : "Designed for individual smart contracts, standard ERC-20 tokens, or basic fractional property designs."}
                       </p>
                     </div>
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                      <ul className="space-y-3 text-sm text-slate-700 font-semibold">
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-800 shrink-0" /> {isRtl ? "تدقيق برمجي واحد" : "1 Smart Contract Audit"}</li>
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-800 shrink-0" /> {isRtl ? "فحص نموذج منفعة التوكن" : "Tokenomics Sharia Screening"}</li>
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-800 shrink-0" /> {isRtl ? "فتوى شرعية معتمدة" : "Advisory Board Scholar Review"}</li>
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-800 shrink-0" /> {isRtl ? "أرشفة لمدة سنة في السجل" : "1 Year Halal Registry Listing"}</li>
+                      </ul>
+                      <button onClick={() => navigateTo("contact")} className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold rounded-full text-xs transition-colors mt-6 cursor-pointer">
+                        {isRtl ? "طلب فحص" : "Initiate Audit"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Plan 2 */}
+                  <div className="bg-[#022C22] border-2 border-[#d4af37] rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col justify-between text-left relative overflow-hidden">
+                    <div className="absolute top-4 right-4 bg-[#d4af37]/20 text-[#d4af37] font-mono text-[10px] font-bold px-3 py-1 rounded-full border border-[#d4af37]/30">
+                      {isRtl ? "شائع" : "POPULAR"}
+                    </div>
+                    <div className={isRtl ? "text-right" : "text-left"}>
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-emerald-300">{isRtl ? "للتطبيقات المتقدمة" : "DAPPS & PROTCOLS"}</span>
+                      <h3 className="font-display font-extrabold text-xl text-white mt-2">Professional Class</h3>
+                      <div className="py-4 font-mono">
+                        <span className="text-4xl font-extrabold text-white">$12,500</span>
+                        <span className="text-xs text-emerald-300"> / {isRtl ? "المشروع" : "audit"}</span>
+                      </div>
+                      <p className="text-sm text-emerald-100/80 leading-relaxed mb-6 font-medium">
+                        {isRtl ? "مثالي للبروتوكولات التفاعلية اللامركزية (DAOs) ومجمعات السيولة وصناديق الوقف." : "Perfect for active decentralized applications (dApps), DAOs, staking protocols, and yield structures."}
+                      </p>
+                    </div>
+                    <div className="space-y-4 pt-4 border-t border-emerald-900/60">
+                      <ul className="space-y-3 text-sm text-emerald-50 font-semibold">
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-[#d4af37] shrink-0" /> {isRtl ? "تدقيق أمني شامل للكود" : "Full Smart Contract & Security Audit"}</li>
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-[#d4af37] shrink-0" /> {isRtl ? "تدقيق مالي جنائي ضد الربا" : "Riba & Financial Forensic Audit"}</li>
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-[#d4af37] shrink-0" /> {isRtl ? "حوكمة التصويت اللامركزي" : "DAO Governance Sharia Review"}</li>
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-[#d4af37] shrink-0" /> {isRtl ? "شارة تحقق في موقع المشروع" : "Embeddable Trust Badge & Web API"}</li>
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-[#d4af37] shrink-0" /> {isRtl ? "مراقبة ربع سنوية" : "Quarterly On-Chain Delta Review"}</li>
+                      </ul>
+                      <button onClick={() => navigateTo("contact")} className="w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-emerald-950 font-extrabold rounded-full text-xs transition-colors mt-6 cursor-pointer">
+                        {isRtl ? "طلب فحص بروتوكول" : "Initiate Audit"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Plan 3 */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 hover-lift shadow-xl flex flex-col justify-between text-left">
+                    <div className={isRtl ? "text-right" : "text-left"}>
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">{isRtl ? "لشبكات الطبقة الأولى" : "LAYER-1 SYSTEMS"}</span>
+                      <h3 className="font-display font-extrabold text-xl text-slate-900 mt-2">Enterprise Class</h3>
+                      <div className="py-4 font-mono">
+                        <span className="text-4xl font-extrabold text-slate-950">Custom</span>
+                        <span className="text-xs text-slate-500"> {isRtl ? "حسب النطاق" : "Quote"}</span>
+                      </div>
+                      <p className="text-sm text-slate-600 leading-relaxed mb-6 font-medium">
+                        {isRtl ? "لشبكات بلوكشين متكاملة، منصات التوريق، والمحافظ السيادية." : "Designed for complete Layer-1 and Layer-2 blockchains, sovereign digital assets, and institutional RWA frameworks."}
+                      </p>
+                    </div>
+                    <div className="space-y-4 pt-4 border-t border-slate-100">
+                      <ul className="space-y-3 text-sm text-slate-700 font-semibold">
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-800 shrink-0" /> {isRtl ? "تدقيق برمجي متعدد اللغات" : "Multi-Repo Technical Code Verification"}</li>
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-800 shrink-0" /> {isRtl ? "جلسات مع الهيئة الفقهية" : "Direct Scholar Board Joint Workshops"}</li>
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-800 shrink-0" /> {isRtl ? "دعم استشاري لتحديث الكود" : "Priority Code Update Retainer Advisory"}</li>
+                        <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-emerald-800 shrink-0" /> {isRtl ? "مراقبة مستمرة 12 شهر" : "12-Month Continuous Guard Telemetry"}</li>
+                      </ul>
+                      <button onClick={() => navigateTo("contact")} className="w-full py-3.5 bg-[#064E3B] hover:bg-[#022C22] text-white font-extrabold rounded-full text-xs transition-colors mt-6 cursor-pointer">
+                        {isRtl ? "تواصل مع مكتب الإدارة" : "Contact Compliance Office"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Ancillary Services */}
+                <div className={`max-w-4xl mx-auto pt-12 border-t border-slate-200 ${isRtl ? "text-right" : "text-left"}`}>
+                  <h4 className="font-display font-extrabold text-base text-slate-900 uppercase tracking-wider mb-6">
+                    {isRtl ? "خدمات إضافية اختيارية" : "Optional & Ancillary Services"}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-slate-700 font-medium">
+                    <div className="p-4 bg-white border border-slate-200 rounded-2xl flex justify-between items-center shadow-sm hover:border-[#d4af37]/35 transition-all">
+                      <span>{isRtl ? "مراجعة عاجلة للكود (خلال 7 أيام)" : "Priority Urgent Audit (7-Day Turnaround)"}</span>
+                      <span className="font-mono text-emerald-850 font-bold">+$2,500</span>
+                    </div>
+                    <div className="p-4 bg-white border border-slate-200 rounded-2xl flex justify-between items-center shadow-sm hover:border-[#d4af37]/35 transition-all">
+                      <span>{isRtl ? "تعديل رخصة أو دمج كود بروتوكول" : "Certificate Schema Update / Chain Migration"}</span>
+                      <span className="font-mono text-emerald-850 font-bold">+$1,500</span>
+                    </div>
+                    <div className="p-4 bg-white border border-slate-200 rounded-2xl flex justify-between items-center shadow-sm hover:border-[#d4af37]/35 transition-all">
+                      <span>{isRtl ? "تجديد سنوي مع التدقيق الجديد" : "Annual Compliance Monitoring Renewal"}</span>
+                      <span className="font-mono text-emerald-850 font-bold">Starting $6,000/yr</span>
+                    </div>
+                    <div className="p-4 bg-white border border-slate-200 rounded-2xl flex justify-between items-center shadow-sm hover:border-[#d4af37]/35 transition-all">
+                      <span>{isRtl ? "دعم وتدريب المطورين على الكود الآمن" : "Developer Sharia Code Architecture Training"}</span>
+                      <span className="font-mono text-emerald-850 font-bold">$350/hr</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* RENDER DYNAMIC PRICING SUBTAB: insights */}
+            {pricingSubTab === "insights" && (
+              <div className="space-y-8 pt-4 animate-in fade-in duration-300">
+                {/* Blog Search bar */}
+                <div className="relative max-w-md mx-auto">
+                  <span className={`absolute inset-y-0 ${isRtl ? "left-4" : "right-4"} flex items-center pointer-events-none text-slate-400`}>
+                    <Search className="w-5 h-5" />
+                  </span>
+                  <input
+                    type="text"
+                    placeholder={isRtl ? "البحث في الأبحاث والمدونة..." : "Search research or news..."}
+                    className={`w-full bg-white border border-slate-200 rounded-full py-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#d4af37] transition-all shadow-sm ${
+                      isRtl ? "pr-6 pl-12 text-right" : "pl-6 pr-12 text-left"
+                    }`}
+                    value={blogSearch}
+                    onChange={(e) => setBlogSearch(e.target.value)}
+                  />
+                </div>
+
+                {/* Category Filters */}
+                <div className="flex flex-wrap gap-2 justify-center py-2">
+                  {["All", "Sharia Opinion", "Technical", "Industry"].map((cat) => {
+                    const active = selectedBlogCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedBlogCategory(cat)}
+                        className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${
+                          active 
+                            ? "bg-[#064E3B] text-white border border-[#d4af37]/30" 
+                            : "bg-slate-100 hover:bg-slate-200 text-slate-600"
+                        }`}
+                      >
+                        {cat === "All" ? (isRtl ? "الكل" : "All") : cat}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Blog Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                  {filteredBlogs.map((post) => (
+                    <div key={post.id} className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm flex flex-col justify-between hover-lift">
+                      <div className={`p-6 ${isRtl ? "text-right" : "text-left"} space-y-4`}>
+                        <span className="font-mono text-[10px] font-bold text-amber-700 uppercase bg-amber-50 px-3 py-1 rounded border border-[#d4af37]/35 inline-block">
+                          {isRtl ? post.categoryAr : post.category}
+                        </span>
+                        <h4 
+                          className="font-display font-extrabold text-base text-slate-900 hover:text-emerald-900 cursor-pointer line-clamp-2 leading-snug"
+                          onClick={() => setSelectedArticle(post)}
+                        >
+                          {isRtl ? post.titleAr : post.title}
+                        </h4>
+                        <p className="text-sm text-slate-500 leading-relaxed font-medium line-clamp-3">
+                          {isRtl ? post.excerptAr : post.excerpt}
+                        </p>
+                      </div>
+                      <div className={`px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400 font-mono ${isRtl ? "flex-row-reverse" : "flex-row"}`}>
+                        <span>{post.date}</span>
+                        <button onClick={() => setSelectedArticle(post)} className="font-sans font-extrabold text-emerald-900 hover:underline inline-flex items-center gap-1.5 cursor-pointer">
+                          <span>{isRtl ? "اقرأ البحث" : "Read Article"}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* RENDER DYNAMIC PRICING SUBTAB: glossary */}
+            {pricingSubTab === "glossary" && (
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-5xl mx-auto pt-4 animate-in fade-in duration-300 ${isRtl ? "text-right" : "text-left"}`}>
+                {glossaryTerms.map((term, idx) => (
+                  <div key={idx} className="bg-white border border-slate-200 p-6 md:p-8 rounded-3xl shadow-sm hover-lift space-y-3">
+                    <div className={`flex justify-between items-center ${isRtl ? "flex-row-reverse" : "flex-row"}`}>
+                      <span className="font-display font-extrabold text-base md:text-lg text-slate-950">{term.term}</span>
+                      <span className="text-sm md:text-base font-bold text-emerald-900">{term.termAr}</span>
+                    </div>
+                    <div className="w-16 h-0.5 bg-[#d4af37]/30" />
+                    <p className="text-sm text-slate-600 leading-relaxed font-medium pt-1">
+                      {isRtl ? term.definitionAr : term.definition}
+                    </p>
                   </div>
                 ))}
               </div>
-            </div>
+            )}
+
+            {/* RENDER DYNAMIC PRICING SUBTAB: faq */}
+            {pricingSubTab === "faq" && (
+              <div className={`space-y-4 max-w-4xl mx-auto pt-4 animate-in fade-in duration-300 ${isRtl ? "text-right" : "text-left"}`}>
+                {faqItems.map((item, idx) => (
+                  <div key={idx} className="bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-sm hover:border-[#d4af37]/30 transition-all duration-300">
+                    <h4 className="font-display font-extrabold text-base text-slate-950 flex items-start gap-3">
+                      <HelpCircle className="w-5 h-5 text-emerald-850 shrink-0 mt-0.5" />
+                      <span>{isRtl ? item.questionAr : item.question}</span>
+                    </h4>
+                    <p className={`text-sm text-slate-600 leading-relaxed mt-3.5 pl-8 ${isRtl ? "pr-8 pl-0 text-right" : "pl-8 text-left"} font-medium`}>
+                      {isRtl ? item.answerAr : item.answer}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
 
           </section>
         )}
 
-        {/* VIEW: CONTACT */}
+        {/* VIEW: CONNECT OFFICE */}
         {activeTab === "contact" && (
-          <section className="py-12 md:py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
             
             {/* Header top info */}
-            <div className="text-center space-y-2">
-              <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#d4af37]">
+            <div className="text-center space-y-3">
+              <span className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#d4af37]">
                 {isRtl ? "المراسلات والاتصال" : "COMPLIANCE CHANNEL"}
               </span>
-              <h2 className="font-display font-bold text-3xl text-gray-950 tracking-tight">
+              <h2 className="font-display font-bold text-3xl sm:text-4xl text-slate-950 tracking-tight">
                 {t.contactTitle}
               </h2>
-              <p className="max-w-md mx-auto text-xs text-gray-400">
+              <p className="max-w-2xl mx-auto text-base text-slate-500 font-semibold leading-relaxed">
                 {t.contactSubtitle}
               </p>
             </div>
@@ -914,32 +1026,32 @@ export default function App() {
               {/* Left Column Contact Information */}
               <div className={`lg:col-span-5 space-y-6 ${isRtl ? "lg:order-2 text-right" : "text-left"}`}>
                 
-                {/* Office locations mockup */}
-                <div className="bg-emerald-950 text-white rounded-3xl p-6 border border-[#d4af37]/10 space-y-4">
-                  <h3 className="font-display font-bold text-base text-[#d4af37]">{t.contactOffice}</h3>
-                  <div className="space-y-3.5 text-xs">
-                    <div className="flex gap-2.5 items-start">
-                      <MapPin className="w-4 h-4 text-[#d4af37] shrink-0 mt-0.5" />
+                {/* Office locations card with large, readable text */}
+                <div className="bg-emerald-950 text-white rounded-3xl p-6 md:p-8 border border-[#d4af37]/25 space-y-6">
+                  <h3 className="font-display font-bold text-lg text-[#d4af37] border-b border-white/10 pb-3">{t.contactOffice}</h3>
+                  <div className="space-y-4.5 text-sm font-medium">
+                    <div className="flex gap-3 items-start">
+                      <MapPin className="w-5 h-5 text-[#d4af37] shrink-0 mt-0.5" />
                       <p className="leading-relaxed">
                         {isRtl 
                           ? "برج الفيصلية، الطابق ٢٤، طريق الملك فهد، الرياض، المملكة العربية السعودية"
                           : "Al Faisaliah Tower, 24th Floor, King Fahd Road, Riyadh, Kingdom of Saudi Arabia"}
                       </p>
                     </div>
-                    <div className="flex gap-2.5 items-start">
-                      <MapPin className="w-4 h-4 text-[#d4af37] shrink-0 mt-0.5" />
+                    <div className="flex gap-3 items-start">
+                      <MapPin className="w-5 h-5 text-[#d4af37] shrink-0 mt-0.5" />
                       <p className="leading-relaxed">
                         {isRtl 
                           ? "مركز دبي المالي العالمي، برج البوابة، دبي، الإمارات العربية المتحدة"
                           : "DIFC, The Gate Precinct, Dubai, United Arab Emirates"}
                       </p>
                     </div>
-                    <div className="flex gap-2.5 items-start">
-                      <Mail className="w-4 h-4 text-[#d4af37] shrink-0" />
+                    <div className="flex gap-3 items-center">
+                      <Mail className="w-5 h-5 text-[#d4af37] shrink-0" />
                       <span>compliance@halalchain.com</span>
                     </div>
-                    <div className="flex gap-2.5 items-start">
-                      <Phone className="w-4 h-4 text-[#d4af37] shrink-0" />
+                    <div className="flex gap-3 items-center">
+                      <Phone className="w-5 h-5 text-[#d4af37] shrink-0" />
                       <span>+966 11 409 2000</span>
                     </div>
                   </div>
@@ -947,51 +1059,51 @@ export default function App() {
 
                 {/* Specific department channels */}
                 <div className="space-y-4">
-                  <div className="p-4 bg-white border border-gray-100 rounded-2xl">
-                    <h4 className="font-bold text-xs text-gray-900 uppercase tracking-wider mb-1">{t.contactSales}</h4>
-                    <p className="text-[11px] text-gray-400">institutions@halalchain.com</p>
+                  <div className="p-5 bg-white border border-slate-200 rounded-2xl hover:border-[#d4af37]/35 transition-all">
+                    <h4 className="font-extrabold text-xs text-slate-900 uppercase tracking-widest mb-1.5">{t.contactSales}</h4>
+                    <p className="text-xs font-bold text-emerald-900 font-mono">institutions@halalchain.com</p>
                   </div>
-                  <div className="p-4 bg-white border border-gray-100 rounded-2xl">
-                    <h4 className="font-bold text-xs text-gray-900 uppercase tracking-wider mb-1">{t.contactPartnerships}</h4>
-                    <p className="text-[11px] text-gray-400">academic@halalchain.com</p>
+                  <div className="p-5 bg-white border border-slate-200 rounded-2xl hover:border-[#d4af37]/35 transition-all">
+                    <h4 className="font-extrabold text-xs text-slate-900 uppercase tracking-widest mb-1.5">{t.contactPartnerships}</h4>
+                    <p className="text-xs font-bold text-emerald-900 font-mono">academic@halalchain.com</p>
                   </div>
                 </div>
               </div>
 
-              {/* Right Column Interactive Form */}
-              <div className={`lg:col-span-7 bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm ${isRtl ? "lg:order-1 text-right" : "text-left"}`}>
+              {/* Right Column Interactive Form with large inputs and focus gold rings */}
+              <div className={`lg:col-span-7 bg-white border border-slate-200 rounded-3xl p-6 md:p-8 shadow-md ${isRtl ? "lg:order-1 text-right" : "text-left"}`}>
                 
                 {contactSuccess ? (
-                  <div className="p-8 text-center space-y-3.5 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
-                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-700">
-                      <CheckCircle2 className="w-6 h-6" />
+                  <div className="p-10 text-center space-y-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                    <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-800">
+                      <CheckCircle2 className="w-7 h-7" />
                     </div>
-                    <h3 className="font-display font-bold text-lg text-emerald-950">{isRtl ? "تم إرسال طلبكم بنجاح" : "Inquiry Safely Transmitted"}</h3>
-                    <p className="text-xs text-emerald-700 max-w-sm mx-auto leading-relaxed">
+                    <h3 className="font-display font-bold text-xl text-emerald-950">{isRtl ? "تم إرسال طلبكم بنجاح" : "Inquiry Safely Transmitted"}</h3>
+                    <p className="text-sm text-emerald-700 max-w-md mx-auto leading-relaxed font-semibold">
                       {t.contactSuccess}
                     </p>
                   </div>
                 ) : (
-                  <form onSubmit={handleContactSubmit} className="space-y-4">
+                  <form onSubmit={handleContactSubmit} className="space-y-5">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Name */}
-                      <div className="space-y-1.5 text-left">
-                        <label className={`text-xs font-bold text-gray-500 uppercase tracking-wider block ${isRtl ? "text-right" : "text-left"}`}>{t.contactFormName}</label>
+                      <div className="space-y-2 text-left">
+                        <label className={`text-xs font-bold text-slate-500 uppercase tracking-wider block ${isRtl ? "text-right" : "text-left"}`}>{t.contactFormName}</label>
                         <input
                           type="text"
                           required
-                          className={`w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-700 ${isRtl ? "text-right" : "text-left"}`}
+                          className={`w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#d4af37] focus:bg-white transition-all ${isRtl ? "text-right" : "text-left"}`}
                           value={contactForm.name}
                           onChange={(e) => setContactForm({ ...contactForm, name: e.target.value })}
                         />
                       </div>
                       {/* Email */}
-                      <div className="space-y-1.5 text-left">
-                        <label className={`text-xs font-bold text-gray-500 uppercase tracking-wider block ${isRtl ? "text-right" : "text-left"}`}>{t.contactFormEmail}</label>
+                      <div className="space-y-2 text-left">
+                        <label className={`text-xs font-bold text-slate-500 uppercase tracking-wider block ${isRtl ? "text-right" : "text-left"}`}>{t.contactFormEmail}</label>
                         <input
                           type="email"
                           required
-                          className={`w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-700 ${isRtl ? "text-right" : "text-left"}`}
+                          className={`w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#d4af37] focus:bg-white transition-all ${isRtl ? "text-right" : "text-left"}`}
                           value={contactForm.email}
                           onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })}
                         />
@@ -1000,21 +1112,21 @@ export default function App() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Company */}
-                      <div className="space-y-1.5 text-left">
-                        <label className={`text-xs font-bold text-gray-500 uppercase tracking-wider block ${isRtl ? "text-right" : "text-left"}`}>{t.contactFormCompany}</label>
+                      <div className="space-y-2 text-left">
+                        <label className={`text-xs font-bold text-slate-500 uppercase tracking-wider block ${isRtl ? "text-right" : "text-left"}`}>{t.contactFormCompany}</label>
                         <input
                           type="text"
                           required
-                          className={`w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-700 ${isRtl ? "text-right" : "text-left"}`}
+                          className={`w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#d4af37] focus:bg-white transition-all ${isRtl ? "text-right" : "text-left"}`}
                           value={contactForm.company}
                           onChange={(e) => setContactForm({ ...contactForm, company: e.target.value })}
                         />
                       </div>
                       {/* Service selector */}
-                      <div className="space-y-1.5 text-left">
-                        <label className={`text-xs font-bold text-gray-500 uppercase tracking-wider block ${isRtl ? "text-right" : "text-left"}`}>{t.contactFormService}</label>
+                      <div className="space-y-2 text-left">
+                        <label className={`text-xs font-bold text-slate-500 uppercase tracking-wider block ${isRtl ? "text-right" : "text-left"}`}>{t.contactFormService}</label>
                         <select
-                          className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#d4af37] focus:bg-white transition-all"
                           value={contactForm.service}
                           onChange={(e) => setContactForm({ ...contactForm, service: e.target.value })}
                         >
@@ -1027,12 +1139,12 @@ export default function App() {
                     </div>
 
                     {/* Message */}
-                    <div className="space-y-1.5 text-left">
-                      <label className={`text-xs font-bold text-gray-500 uppercase tracking-wider block ${isRtl ? "text-right" : "text-left"}`}>{t.contactFormMessage}</label>
+                    <div className="space-y-2 text-left">
+                      <label className={`text-xs font-bold text-slate-500 uppercase tracking-wider block ${isRtl ? "text-right" : "text-left"}`}>{t.contactFormMessage}</label>
                       <textarea
                         required
                         rows={4}
-                        className={`w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-700 ${isRtl ? "text-right" : "text-left"}`}
+                        className={`w-full bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#d4af37] focus:bg-white transition-all ${isRtl ? "text-right" : "text-left"}`}
                         value={contactForm.message}
                         onChange={(e) => setContactForm({ ...contactForm, message: e.target.value })}
                       />
@@ -1041,7 +1153,7 @@ export default function App() {
                     {/* Submit Button */}
                     <button
                       type="submit"
-                      className="w-full py-3 bg-emerald-950 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl transition-colors shadow-sm"
+                      className="w-full py-4 bg-emerald-950 hover:bg-emerald-900 text-white text-sm font-extrabold rounded-xl transition-all shadow-sm cursor-pointer hover:shadow-md"
                     >
                       {t.contactFormSubmit}
                     </button>
@@ -1058,29 +1170,29 @@ export default function App() {
 
       {/* ARTICLE READER MODAL OVERLAY */}
       {selectedArticle && (
-        <div className="fixed inset-0 bg-gray-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="relative w-full max-w-2xl bg-white rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="relative w-full max-w-3xl bg-white rounded-3xl p-6 md:p-8 shadow-2xl animate-in fade-in zoom-in-95 duration-200 max-h-[85vh] overflow-y-auto border border-[#d4af37]/20">
             <button
               onClick={() => setSelectedArticle(null)}
-              className="absolute top-4 right-4 p-1.5 bg-gray-50 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-900 transition-colors"
+              className="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-400 hover:text-slate-900 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
-            <div className={`space-y-4 ${isRtl ? "text-right" : "text-left"}`} dir={isRtl ? "rtl" : "ltr"}>
-              <span className="font-mono text-[9px] font-bold text-amber-600 uppercase bg-amber-50 px-2.5 py-1 rounded border border-amber-200/50">
+            <div className={`space-y-5 ${isRtl ? "text-right" : "text-left"}`} dir={isRtl ? "rtl" : "ltr"}>
+              <span className="font-mono text-xs font-bold text-amber-700 uppercase bg-amber-50 px-3 py-1 rounded border border-[#d4af37]/35 inline-block">
                 {isRtl ? selectedArticle.categoryAr : selectedArticle.category}
               </span>
-              <h3 className="font-display font-bold text-xl md:text-2xl text-gray-950 leading-tight block pt-2">
+              <h3 className="font-display font-extrabold text-2xl md:text-3xl text-slate-950 leading-tight block pt-2">
                 {isRtl ? selectedArticle.titleAr : selectedArticle.title}
               </h3>
-              <div className="text-[10px] text-gray-400 font-mono flex items-center gap-4">
+              <div className="text-xs text-slate-400 font-mono flex items-center gap-4">
                 <span>{selectedArticle.date}</span>
                 <span>•</span>
                 <span>{isRtl ? selectedArticle.readTimeAr : selectedArticle.readTime}</span>
               </div>
-              <div className="w-16 h-0.5 bg-gradient-to-r from-[#d4af37] to-transparent my-4" />
-              <p className="text-xs md:text-sm text-gray-600 leading-relaxed whitespace-pre-line font-medium">
+              <div className="w-24 h-0.5 bg-gradient-to-r from-[#d4af37] to-transparent my-4" />
+              <p className="text-sm md:text-base text-slate-700 leading-relaxed whitespace-pre-line font-medium">
                 {isRtl ? selectedArticle.contentAr : selectedArticle.content}
               </p>
             </div>
@@ -1089,74 +1201,74 @@ export default function App() {
       )}
 
       {/* FOOTER */}
-      <footer id="halalchain-primary-footer" className="bg-white border-t border-gray-100 py-12 md:py-16 text-xs text-gray-500">
+      <footer id="halalchain-primary-footer" className="bg-white border-t border-slate-200 py-16 md:py-20 text-sm text-slate-500 font-medium">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-12 gap-8 mb-12">
           
           {/* Logo brand block */}
-          <div className={`md:col-span-4 space-y-4 ${isRtl ? "text-right" : "text-left"}`}>
+          <div className={`md:col-span-4 space-y-5 ${isRtl ? "text-right" : "text-left"}`}>
             <Logo size="sm" showTagline={true} isRtl={isRtl} />
-            <p className="text-gray-400 leading-relaxed font-normal">
+            <p className="text-slate-400 leading-relaxed font-medium text-xs">
               {t.companyDesc}
             </p>
           </div>
 
-          {/* Quick links columns */}
+          {/* Quick links columns - perfectly routing back into unified switcher states! */}
           <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-6">
             {/* Services */}
-            <div className={`space-y-3.5 ${isRtl ? "text-right" : "text-left"}`}>
-              <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[10px]">{isRtl ? "الفئات والتصنيف" : "CERTIFICATION CLASSES"}</h4>
-              <ul className="space-y-2">
-                <li><button onClick={() => { setActiveTab("services"); }} className="hover:text-emerald-800 transition-colors">Sharia Compliance</button></li>
-                <li><button onClick={() => { setActiveTab("services"); }} className="hover:text-emerald-800 transition-colors">DAO Sharia Governance</button></li>
-                <li><button onClick={() => { setActiveTab("services"); }} className="hover:text-emerald-800 transition-colors">Smart Contract Security</button></li>
-                <li><button onClick={() => { setActiveTab("services"); }} className="hover:text-emerald-800 transition-colors">Tokenomics Assessment</button></li>
+            <div className={`space-y-4 ${isRtl ? "text-right" : "text-left"}`}>
+              <h4 className="font-extrabold text-slate-900 uppercase tracking-wider text-xs">{isRtl ? "الفئات والتصنيف" : "CERTIFICATION CLASSES"}</h4>
+              <ul className="space-y-3 text-xs">
+                <li><button onClick={() => navigateTo("screening", "services")} className="hover:text-emerald-950 hover:underline cursor-pointer">Sharia Compliance</button></li>
+                <li><button onClick={() => navigateTo("screening", "services")} className="hover:text-emerald-950 hover:underline cursor-pointer">DAO Sharia Governance</button></li>
+                <li><button onClick={() => navigateTo("screening", "services")} className="hover:text-emerald-950 hover:underline cursor-pointer">Smart Contract Security</button></li>
+                <li><button onClick={() => navigateTo("screening", "services")} className="hover:text-emerald-950 hover:underline cursor-pointer">Tokenomics Assessment</button></li>
               </ul>
             </div>
 
             {/* Methodology */}
-            <div className={`space-y-3.5 ${isRtl ? "text-right" : "text-left"}`}>
-              <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[10px]">{isRtl ? "إطار التقييم" : "SCREENING CORE"}</h4>
-              <ul className="space-y-2">
-                <li><button onClick={() => { setActiveTab("methodology"); }} className="hover:text-emerald-800 transition-colors">AAOIFI Standards</button></li>
-                <li><button onClick={() => { setActiveTab("methodology"); }} className="hover:text-emerald-800 transition-colors">Whitepaper Review</button></li>
-                <li><button onClick={() => { setActiveTab("methodology"); }} className="hover:text-emerald-800 transition-colors">Revenue Forensics</button></li>
-                <li><button onClick={() => { setActiveTab("methodology"); }} className="hover:text-emerald-800 transition-colors">On-Chain Monitoring</button></li>
+            <div className={`space-y-4 ${isRtl ? "text-right" : "text-left"}`}>
+              <h4 className="font-extrabold text-slate-900 uppercase tracking-wider text-xs">{isRtl ? "إطار التقييم" : "SCREENING CORE"}</h4>
+              <ul className="space-y-3 text-xs">
+                <li><button onClick={() => navigateTo("screening", "methodology")} className="hover:text-emerald-950 hover:underline cursor-pointer">AAOIFI Standards</button></li>
+                <li><button onClick={() => navigateTo("screening", "methodology")} className="hover:text-emerald-950 hover:underline cursor-pointer">Whitepaper Review</button></li>
+                <li><button onClick={() => navigateTo("screening", "methodology")} className="hover:text-emerald-950 hover:underline cursor-pointer">Revenue Forensics</button></li>
+                <li><button onClick={() => navigateTo("screening", "methodology")} className="hover:text-emerald-950 hover:underline cursor-pointer">On-Chain Monitoring</button></li>
               </ul>
             </div>
 
             {/* Registry */}
-            <div className={`space-y-3.5 ${isRtl ? "text-right" : "text-left"}`}>
-              <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[10px]">{isRtl ? "السجل العام" : "KNOWLEDGE ASSETS"}</h4>
-              <ul className="space-y-2">
-                <li><button onClick={() => { setActiveTab("registry"); }} className="hover:text-emerald-800 transition-colors">Active Halal Registry</button></li>
-                <li><button onClick={() => { setActiveTab("verify"); }} className="hover:text-emerald-800 transition-colors">Verify Certificate</button></li>
-                <li><button onClick={() => { setActiveTab("resources"); }} className="hover:text-emerald-800 transition-colors">Research Papers</button></li>
-                <li><button onClick={() => { setActiveTab("resources"); }} className="hover:text-emerald-800 transition-colors">Term glossary</button></li>
+            <div className={`space-y-4 ${isRtl ? "text-right" : "text-left"}`}>
+              <h4 className="font-extrabold text-slate-900 uppercase tracking-wider text-xs">{isRtl ? "السجل العام" : "KNOWLEDGE ASSETS"}</h4>
+              <ul className="space-y-3 text-xs">
+                <li><button onClick={() => navigateTo("registry", "explore")} className="hover:text-emerald-950 hover:underline cursor-pointer">Active Halal Registry</button></li>
+                <li><button onClick={() => navigateTo("registry", "verify")} className="hover:text-emerald-950 hover:underline cursor-pointer">Verify Certificate</button></li>
+                <li><button onClick={() => navigateTo("pricing", "insights")} className="hover:text-emerald-950 hover:underline cursor-pointer">Research Papers</button></li>
+                <li><button onClick={() => navigateTo("pricing", "glossary")} className="hover:text-emerald-950 hover:underline cursor-pointer">Term glossary</button></li>
               </ul>
             </div>
 
             {/* Corporate */}
-            <div className={`space-y-3.5 ${isRtl ? "text-right" : "text-left"}`}>
-              <h4 className="font-bold text-gray-900 uppercase tracking-wider text-[10px]">{isRtl ? "عن المؤسسة" : "CORPORATE OFFICE"}</h4>
-              <ul className="space-y-2">
-                <li><button onClick={() => { setActiveTab("about"); }} className="hover:text-emerald-800 transition-colors">Independence Charter</button></li>
-                <li><button onClick={() => { setActiveTab("about"); }} className="hover:text-emerald-800 transition-colors">Sharia Jurist Board</button></li>
-                <li><button onClick={() => { setActiveTab("contact"); }} className="hover:text-emerald-800 transition-colors">Riyadh & Dubai offices</button></li>
-                <li><button onClick={() => { setActiveTab("pricing"); }} className="hover:text-emerald-800 transition-colors">Compliance Pricing</button></li>
+            <div className={`space-y-4 ${isRtl ? "text-right" : "text-left"}`}>
+              <h4 className="font-extrabold text-slate-900 uppercase tracking-wider text-xs">{isRtl ? "عن المؤسسة" : "CORPORATE OFFICE"}</h4>
+              <ul className="space-y-3 text-xs">
+                <li><button onClick={() => navigateTo("home")} className="hover:text-emerald-950 hover:underline cursor-pointer">Independence Charter</button></li>
+                <li><button onClick={() => navigateTo("home")} className="hover:text-emerald-950 hover:underline cursor-pointer">Sharia Jurist Board</button></li>
+                <li><button onClick={() => navigateTo("contact")} className="hover:text-emerald-950 hover:underline cursor-pointer">Riyadh & Dubai offices</button></li>
+                <li><button onClick={() => navigateTo("pricing", "rates")} className="hover:text-emerald-950 hover:underline cursor-pointer">Compliance Pricing</button></li>
               </ul>
             </div>
           </div>
         </div>
 
         {/* Bottom credits */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-gray-50 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[10px] text-gray-400 text-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-100 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs text-slate-400 text-center">
           <div>
             © {new Date().getFullYear()} HALALCHAIN™ Independent Certification Board. All Rights Reserved.
           </div>
           <div className="flex gap-4">
-            <span className="hover:text-gray-600 cursor-pointer">{isRtl ? "سياسة الخصوصية" : "Privacy Policy"}</span>
-            <span className="hover:text-gray-600 cursor-pointer">{isRtl ? "شروط الخدمة والأرشفة" : "Terms of Certification"}</span>
-            <span className="hover:text-gray-600 cursor-pointer">{isRtl ? "إخلاء المسؤولية المستقل" : "Independence Charter"}</span>
+            <span className="hover:text-slate-600 cursor-pointer">{isRtl ? "سياسة الخصوصية" : "Privacy Policy"}</span>
+            <span className="hover:text-slate-600 cursor-pointer">{isRtl ? "شروط الخدمة والأرشفة" : "Terms of Certification"}</span>
+            <span className="hover:text-slate-600 cursor-pointer">{isRtl ? "إخلاء المسؤولية المستقل" : "Independence Charter"}</span>
           </div>
         </div>
       </footer>
