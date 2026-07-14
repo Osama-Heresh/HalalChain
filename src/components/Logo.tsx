@@ -37,13 +37,31 @@ export default function Logo({
       id="halalchain-brand-logo"
       className={`flex items-center select-none ${className}`}
     >
+      {/* Dynamic inline SVG filter to make the white background perfectly transparent */}
+      <svg className="absolute w-0 h-0 pointer-events-none select-none" aria-hidden="true" width="0" height="0">
+        <defs>
+          <filter id="halalchain-remove-white-filter" colorInterpolationFilters="sRGB">
+            <feColorMatrix
+              type="matrix"
+              values="
+                1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                -1 -1 -1 3 0
+              "
+            />
+          </filter>
+        </defs>
+      </svg>
+
       {showText ? (
         // Display the full, beautiful, unaltered logo (icon + text + tagline)
         <img
           src={logoImg}
           alt="HalalChain Logo"
           referrerPolicy="no-referrer"
-          className={`${currentSize.height} object-contain mix-blend-multiply`}
+          className={`${currentSize.height} object-contain`}
+          style={{ filter: "url(#halalchain-remove-white-filter)" }}
         />
       ) : (
         // Crop/zoom to show only the top iconic star mark when text is hidden
@@ -55,7 +73,8 @@ export default function Logo({
             src={logoImg}
             alt="HalalChain Logo Icon"
             referrerPolicy="no-referrer"
-            className="absolute top-0 left-0 w-full h-[165%] object-cover object-top scale-105 mix-blend-multiply"
+            className="absolute top-0 left-0 w-full h-[165%] object-cover object-top scale-105"
+            style={{ filter: "url(#halalchain-remove-white-filter)" }}
           />
         </div>
       )}
